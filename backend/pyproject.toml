@@ -1,0 +1,25 @@
+[project]
+name = "ai-agency-os-backend"
+version = "0.1.0"
+description = "AI Agency OS v2 — FastAPI backend with openai-agents agent suite"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "python-dotenv>=1.0.1",
+    "pydantic>=2.9.0",
+    "openai-agents>=0.18.0",
+    "duckduckgo-search>=8.1.1",
+    "tavily-python>=0.7.26",
+    "firecrawl-py>=4.34.0",
+    "requests>=2.32.0",
+]
+
+[[project.authors]]
+name = "Mohammad Hassan"
+
+[dependency-groups]
+dev = []
+
+[tool.uv]
+package = false

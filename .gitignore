@@ -1,0 +1,39 @@
+# --- environment & secrets ---
+.env
+.env.*
+!.env.example
+
+# --- dependencies ---
+node_modules/
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# --- build artifacts ---
+.next/
+out/
+dist/
+build/
+*.tsbuildinfo
+next-env.d.ts
+
+# --- local data & databases ---
+*.db
+*.sqlite
+*.sqlite3
+data/*.json
+
+# --- logs & caches ---
+*.log
+.cache/
+.turbo/
+.DS_Store
+Thumbs.db
+
+# --- tooling ---
+.vscode/
+.idea/
+*.swp
+claude_arena/
+obscura/
