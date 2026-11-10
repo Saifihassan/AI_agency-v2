@@ -1165,3 +1165,33 @@ a.headline-row:hover .hl-arrow { opacity: 1; transform: translate(2px, -2px); }
 @media (min-width: 961px) {
   .menu-btn, .menu-screen { display: none !important; }
 }
+
+/* ---- tiny source pill strip ---- */
+.source-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-top: var(--space-3);
+}
+.strip-label {
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.strip-pill {
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 3px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--bg);
+  font-size: 11px;
+  color: var(--sub);
+  text-decoration: none;
+  transition: border-color 0.2s, color 0.2s;
+}
+.strip-pill:hover { border-color: var(--accent); color: var(--ink); }

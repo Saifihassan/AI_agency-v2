@@ -216,30 +216,14 @@ export default function NewsPage() {
             )}
           </div>
 
-          {allSources.length > 0 && (
-            <SectionLabel n="05">Sources processed ({allSources.length})</SectionLabel>
-          )}
-          {allSources.length > 0 && (
-            <div className="panel" style={{ marginTop: 0 }}>
-              <div className="sources-full">
-                {allSources.map((s, i) => (
-                  <a
-                    key={`src-${i}`}
-                    href={s.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="source-row"
-                  >
-                    <span className="source-num">{String(i + 1).padStart(2, "0")}</span>
-                    <span className="source-body">
-                      <span className="source-title">{s.title}</span>
-                      <span className="source-pub">{s.source}</span>
-                    </span>
-                  </a>
-                ))}
-              </div>
-            </div>
-          )}
+          <div className="source-strip">
+            <span className="strip-label">sources</span>
+            {allSources.map((s, i) => (
+              <a key={`src-${i}`} href={s.url} target="_blank" rel="noreferrer" className="strip-pill">
+                {s.source} · {s.title}
+              </a>
+            ))}
+          </div>
           </>
           )}
         </>
