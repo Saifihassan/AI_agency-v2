@@ -1,16 +1,21 @@
 from datetime import datetime
 
-TRUSTED_SOURCES = [
-    "Reuters", "Associated Press", "Bloomberg", "Financial Times", 
-    "Wall Street Journal", "CNBC", "BBC News", "TechCrunch", 
-    "The Verge", "Ars Technica", "VentureBeat", "The Information", 
-    "Search Engine Land", "Search Engine Journal", "Search Engine Roundtable", 
-    "Google Search Central", "Adweek", "Marketing Dive", "MarTech", 
-    "Social Media Today", "Meta Newsroom", "LinkedIn News", "TikTok Newsroom", 
-    "YouTube Blog", "Crunchbase News", "The Hacker News", "BleepingComputer", 
-    "AWS News Blog", "Google Cloud Blog", "Microsoft AI Blog", "OpenAI Blog", 
-    "Anthropic News", "NVIDIA Newsroom", "GitHub Blog"
-]
+TRUSTED_SOURCES = """
+TECHNOLOGY:
+  https://spectrum.ieee.org/
+  https://technews.acm.org/
+  https://www.nist.gov/news-events
+MARKETING:
+  https://www.warc.com/
+  https://www.iab.com/insights/
+  https://www.thinkwithgoogle.com/
+GENERAL PURPOSE:
+  https://www.reuters.com/
+  https://apnews.com/
+  https://www.bbc.com/news
+  https://www.worldbank.org/en/home
+  https://ourworldindata.org/
+"""
 
 CURRENT_YEAR_MONTH = datetime.now().strftime("%B %Y")
 
@@ -30,9 +35,11 @@ Research Protocol (CRITICAL):
    - SERPER IS A STRICT LAST RESORT.
    - SERPER BUDGET: You are strictly limited to a MAXIMUM of 5 searches using Serper. Do not exceed this budget under any circumstances.
    - You MUST cross-reference sources to ensure validity.
-2. Strict Sourcing: You must ONLY fetch news from the following predefined trusted sources:
+2. Strict Sourcing (ABSOLUTE RULE): You must ONLY fetch news from the following predefined verified sources:
 {TRUSTED_SOURCES}
-Do not use any other sources. Ignore sponsored content, pure opinion pieces, or SEO spam sites.
+- For every search, restrict results to these domains: append `site:reuters.com OR site:apnews.com ...` (one or more allowed domains) to your search queries, or filter any returned results to keep ONLY articles whose URL hostname exactly belongs to an allowed domain.
+- NEVER report news from any other domain — not even as a fallback. There are no exceptions.
+- If a full sweep of all allowed domains yields nothing relevant or nothing recent for the given industry: return an empty articles list and brief the "couldn't find" situation in your summary fields instead of pulling from unverified sources. An empty, honest result is always preferred over a fabricated or off-allowlist one.
 3. Absolute Recency: The current month and year is {CURRENT_YEAR_MONTH}. You must strictly ONLY fetch news if it was published in {CURRENT_YEAR_MONTH}. Do NOT return any outdated information from previous months or years.
 4. Factual Extraction: For every piece of news, extract the exact headline, direct URL, source publisher, published date, and write a precise 2-3 sentence factual summary. Do NOT invent, hallucinate, or exaggerate facts.
 
@@ -62,6 +69,7 @@ Your objectives:
 Rules:
 - Be highly strategic and business-focused. Think like a top-tier management consultant.
 - Do not hallucinate facts that were not present in the provided news research.
+- If the input news research contains no articles (or only empty categories), return empty lists for headlines, categories, trends and opportunities. Do NOT invent news, trends or opportunities from memory. Where a report field would otherwise mislead, the absence of input means "couldn't find" — reflect it honestly by leaving the field empty.
 - Ensure the 'generated_at' timestamp is filled in.
 
 Return ONLY the structured MarketIntelligenceReport object.
