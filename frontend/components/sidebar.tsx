@@ -14,16 +14,18 @@ import {
   sendEmailFly,
   dataTransferDiagonal1,
   businessCard1,
+  settingsSliderDesktopHorizontal,
 } from "./icons";
 
 const LINKS = [
   { href: "/profile", label: "Profile", icon: businessCard1 },
-  { href: "/", label: "Dashboard", icon: layoutDashboard1 },
+  { href: "/dashboard", label: "Dashboard", icon: layoutDashboard1 },
   { href: "/studio", label: "Content Studio", icon: pencil1 },
   { href: "/research", label: "Research", icon: networkSearch },
   { href: "/news", label: "Market News", icon: newspaperFold },
   { href: "/outreach", label: "Outreach", icon: sendEmailFly },
   { href: "/competitor", label: "Competitor", icon: dataTransferDiagonal1 },
+  { href: "/settings", label: "Settings", icon: settingsSliderDesktopHorizontal },
 ];
 
 export default function Sidebar() {

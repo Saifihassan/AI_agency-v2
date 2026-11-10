@@ -10,6 +10,7 @@ import {
   ideaStrategy,
   timeClockCircle,
   businessCard1,
+  settingsSliderDesktopHorizontal,
 } from "@stacksjs/iconify-streamline-ultimate";
 
 export {
@@ -23,6 +24,7 @@ export {
   ideaStrategy,
   timeClockCircle,
   businessCard1,
+  settingsSliderDesktopHorizontal,
 };
 
 export type StreamlineIcon = typeof layoutDashboard1;
