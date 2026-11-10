@@ -4,8 +4,10 @@ import { useEffect, useState } from "react";
 import { apiMode, runModule } from "@/lib/api";
 import { saveRun, loadRun, formatSaved } from "@/lib/cache";
 import type { MarketIntelligenceReport } from "@/lib/types";
-import { Empty, Kicker, Panel, RunBar , Reveal, SectionLabel } from "@/components/ui";
+import { Empty, Kicker, Panel, RunBar, Reveal, SectionLabel } from "@/components/ui";
 import { useWorkspaces } from "@/components/workspace";
+
+const TABS = ["Headlines", "Trends", "Opportunities", "News desk"] as const;
 
 export default function NewsPage() {
   const { active, bumpUsage } = useWorkspaces();
@@ -14,11 +16,14 @@ export default function NewsPage() {
   const [running, setRunning] = useState(false);
   const [error, setError] = useState("");
   const [restored, setRestored] = useState(false);
+  const [tab, setTab] = useState<(typeof TABS)[number]>("Headlines");
+  const [indLabel, setIndLabel] = useState("");
 
   useEffect(() => {
     const last = loadRun<MarketIntelligenceReport>("news");
     if (last?.data) {
       setData(last.data);
+      setIndLabel(last.label || "");
       setRestored(true);
     }
   }, []);
@@ -34,8 +39,10 @@ export default function NewsPage() {
         workspace: active?.name,
       })) as MarketIntelligenceReport;
       setData(res);
+      setIndLabel(industry);
       setRestored(false);
-      saveRun("news", res);
+      saveRun("news", res, industry);
+      setTab("Headlines");
       bumpUsage("Market News");
     } catch {
       setError("Run failed. Check the API and try again.");
@@ -71,58 +78,102 @@ export default function NewsPage() {
         </form>
       </Panel>
 
-      {!data ? <Reveal i={2}><Empty>No intelligence report yet.</Empty></Reveal> : (
+      {!data ? (
+        <Reveal i={2}>
+          <Empty>No intelligence report yet.</Empty>
+        </Reveal>
+      ) : (
         <>
           {restored && (
             <p className="kicker" style={{ marginTop: 0 }}>
-              Showing the last report from this session
+              <strong>Showing the last report from this session</strong>
             </p>
           )}
-          <Panel title={undefined} tight={false}>
-            {data.one_liner_headlines.map((h) => (
-              <div className="headline-row" key={h}>→ {h}</div>
-            ))}
-            <p className="why" style={{ color: "var(--sub)", fontSize: 12.5, paddingTop: 10 }}>
-              Generated {data.generated_at}
-            </p>
-          </Panel>
-
-          <div className="grid2" style={{ marginTop: 0 }}>
-            <Panel title="Trends">
-              {data.market_trends.map((t) => (
-                <div className="finding" key={t.title}>
-                  <h4>{t.title}</h4>
-                  <p>{t.description}</p>
-                </div>
-              ))}
-            </Panel>
-            <Panel title="Opportunities">
-              {data.opportunities.map((o) => (
-                <div className="finding" key={o.title}>
-                  <h4>{o.title}</h4>
-                  <p>{o.description}</p>
-                </div>
-              ))}
-            </Panel>
+          <div className="report-shade">
+            <div className="panel" style={{ marginTop: 0 }}>
+              <h3 className="report-title">Industry intelligence</h3>
+              <div className="report-meta">
+                <span>Industry · {indLabel || "—"}</span>
+                <span>Generated · {data.generated_at}</span>
+              </div>
+            </div>
           </div>
 
-          {data.categorized_news.map((c) => (
-            <Panel title={c.category} key={c.category}>
-              {c.articles.map((a) => (
-                <div className="finding" key={a.title}>
-                  <h4>
-                    {a.url !== "#" ? (
-                      <a href={a.url} target="_blank" rel="noopener" style={{ color: "inherit" }}>
-                        {a.title} ↗
-                      </a>
-                    ) : a.title}
-                  </h4>
-                  <p>{a.summary}</p>
-                  <p className="why">{a.source} · {a.published_date}</p>
+          <div className="tabs" role="tablist">
+            {TABS.map((t, i) => (
+              <button
+                key={t}
+                role="tab"
+                aria-selected={tab === t}
+                className={`tab ${tab === t ? "tab-active" : ""}`}
+                onClick={() => setTab(t)}
+              >
+                {t} · 0{i + 1}
+                {t === "News desk" && ` (${data.categorized_news.length})`}
+              </button>
+            ))}
+          </div>
+
+          <div className="tab-view">
+            {tab === "Headlines" && (
+              <Panel title="Headlines · 01">
+                {data.one_liner_headlines.map((h) => (
+                  <div className="headline-row" key={h}>→ {h}</div>
+                ))}
+              </Panel>
+            )}
+
+            {tab === "Trends" && (
+              <>
+                <SectionLabel n="02">Market trends ({data.market_trends.length})</SectionLabel>
+                <div className="panel" style={{ marginTop: 0 }}>
+                  {data.market_trends.map((t) => (
+                    <div className="finding" key={t.title}>
+                      <h4>{t.title}</h4>
+                      <p>{t.description}</p>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </Panel>
-          ))}
+              </>
+            )}
+
+            {tab === "Opportunities" && (
+              <>
+                <SectionLabel n="03">Opportunities ({data.opportunities.length})</SectionLabel>
+                <div className="panel" style={{ marginTop: 0 }}>
+                  {data.opportunities.map((o) => (
+                    <div className="finding" key={o.title}>
+                      <h4>{o.title}</h4>
+                      <p>{o.description}</p>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {tab === "News desk" && (
+              <>
+                <SectionLabel n="04">Categorized news</SectionLabel>
+                {data.categorized_news.map((c) => (
+                  <Panel title={c.category} key={c.category}>
+                    {c.articles.map((a) => (
+                      <div className="finding" key={a.title}>
+                        <h4>
+                          {a.url !== "#" ? (
+                            <a href={a.url} target="_blank" rel="noopener" style={{ color: "inherit" }}>
+                              {a.title} ↗
+                            </a>
+                          ) : a.title}
+                        </h4>
+                        <p>{a.summary}</p>
+                        <p className="why">{a.source} · {a.published_date}</p>
+                      </div>
+                    ))}
+                  </Panel>
+                ))}
+              </>
+            )}
+          </div>
         </>
       )}
     </>

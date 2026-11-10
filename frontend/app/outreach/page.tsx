@@ -4,13 +4,15 @@ import { useEffect, useState } from "react";
 import { apiMode, runModule } from "@/lib/api";
 import { saveRun, loadRun, formatSaved } from "@/lib/cache";
 import type { ProspectAnalysis, OutreachSequence } from "@/lib/types";
-import { Empty, Kicker, Panel, BaseItems, RunBar , Reveal, SectionLabel } from "@/components/ui";
+import { Empty, Kicker, Panel, BaseItems, RunBar, Reveal, SectionLabel } from "@/components/ui";
 import { useWorkspaces } from "@/components/workspace";
 
 type Result = {
   prospect_analysis: ProspectAnalysis;
   outreach_sequence: OutreachSequence;
 };
+
+const TABS = ["Prospect analysis", "Sequence", "CTA"] as const;
 
 export default function OutreachPage() {
   const { active, bumpUsage } = useWorkspaces();
@@ -21,6 +23,7 @@ export default function OutreachPage() {
   const [running, setRunning] = useState(false);
   const [error, setError] = useState("");
   const [restored, setRestored] = useState(false);
+  const [tab, setTab] = useState<(typeof TABS)[number]>("Prospect analysis");
 
   useEffect(() => {
     const last = loadRun<Result>("outreach");
@@ -45,6 +48,7 @@ export default function OutreachPage() {
       setData(res);
       setRestored(false);
       saveRun("outreach", res);
+      setTab("Prospect analysis");
       bumpUsage("Outreach");
     } catch {
       setError("Run failed. Check the API and try again.");
@@ -96,38 +100,103 @@ export default function OutreachPage() {
         </form>
       </Panel>
 
-      {!data ? <Reveal i={2}><Empty>No sequence yet.</Empty></Reveal> : (
+      {!data ? (
+        <Reveal i={2}>
+          <Empty>No sequence yet.</Empty>
+        </Reveal>
+      ) : (
         <>
           {restored && (
             <p className="kicker" style={{ marginTop: 0 }}>
-              Showing the last sequence from this session
+              <strong>Showing the last sequence from this session</strong>
             </p>
           )}
-          <Panel title="Prospect analysis" tight>
-            <dl className="kv">
-              <dt>Summary</dt><dd>{data.prospect_analysis.company_summary}</dd>
-              <dt>Audience</dt><dd>{data.prospect_analysis.target_audience}</dd>
-              <dt>Positioning</dt><dd>{data.prospect_analysis.current_positioning}</dd>
-              <dt>Angle</dt><dd>{data.prospect_analysis.outreach_angle}</dd>
-              <dt>Value prop</dt><dd>{data.prospect_analysis.value_proposition}</dd>
-            </dl>
-            <SectionLabel n="01">Pain points</SectionLabel>
-            <BaseItems items={data.prospect_analysis.identified_pain_points} />
-          </Panel>
-
-          <SectionLabel n="02">
-            Sequence — {data.outreach_sequence.tone.toUpperCase()} TONE
-          </SectionLabel>
-          <Panel title="Subject lines">
-            <div className="subjects">
-              {data.outreach_sequence.subject_lines.map((s) => <span key={s}>{s}</span>)}
+          <div className="report-shade">
+            <div className="panel" style={{ marginTop: 0 }}>
+              <h3 className="report-title">
+                {data.prospect_analysis.company_summary.split(/[.—-]/)[0] || "Outreach sequence"}
+              </h3>
+              <div className="report-meta">
+                <span>Prospect · {website}</span>
+                <span>Tone · {data.outreach_sequence.tone}</span>
+              </div>
             </div>
-          </Panel>
-          <Panel title="Cold email"><div className="copy-block">{data.outreach_sequence.cold_email}</div></Panel>
-          <Panel title="Follow-up 1"><div className="copy-block">{data.outreach_sequence.follow_up_email_1}</div></Panel>
-          <Panel title="Follow-up 2"><div className="copy-block">{data.outreach_sequence.follow_up_email_2}</div></Panel>
-          <SectionLabel n="03">CTA</SectionLabel>
-          <p style={{ color: "var(--accent)", fontFamily: "var(--font-display)", fontWeight: 600, marginTop: "var(--space-1)" }}>{data.outreach_sequence.call_to_action}</p>
+          </div>
+
+          <div className="tabs" role="tablist">
+            {TABS.map((t, i) => (
+              <button
+                key={t}
+                role="tab"
+                aria-selected={tab === t}
+                className={`tab ${tab === t ? "tab-active" : ""}`}
+                onClick={() => setTab(t)}
+              >
+                {t} · 0{i + 1}
+              </button>
+            ))}
+          </div>
+
+          <div className="tab-view">
+            {tab === "Prospect analysis" && (
+              <>
+                <SectionLabel n="01">Analysis</SectionLabel>
+                <Panel title="Prospect analysis" tight>
+                  <dl className="kv">
+                    <dt>Summary</dt><dd>{data.prospect_analysis.company_summary}</dd>
+                    <dt>Audience</dt><dd>{data.prospect_analysis.target_audience}</dd>
+                    <dt>Positioning</dt><dd>{data.prospect_analysis.current_positioning}</dd>
+                    <dt>Angle</dt><dd>{data.prospect_analysis.outreach_angle}</dd>
+                    <dt>Value prop</dt><dd>{data.prospect_analysis.value_proposition}</dd>
+                  </dl>
+                  <SectionLabel n="A">Pain points</SectionLabel>
+                  <BaseItems items={data.prospect_analysis.identified_pain_points} />
+                </Panel>
+                <button className="link-btn" onClick={() => setTab("Sequence")}>
+                  Next: sequence →
+                </button>
+              </>
+            )}
+
+            {tab === "Sequence" && (
+              <>
+                <SectionLabel n="02">
+                  Sequence — {data.outreach_sequence.tone.toUpperCase()} TONE
+                </SectionLabel>
+                <Panel title="Subject lines">
+                  <div className="subjects">
+                    {data.outreach_sequence.subject_lines.map((s) => <span key={s}>{s}</span>)}
+                  </div>
+                </Panel>
+                <Panel title="Cold email"><div className="copy-block">{data.outreach_sequence.cold_email}</div></Panel>
+                <Panel title="Follow-up 1"><div className="copy-block">{data.outreach_sequence.follow_up_email_1}</div></Panel>
+                <Panel title="Follow-up 2"><div className="copy-block">{data.outreach_sequence.follow_up_email_2}</div></Panel>
+                <button className="link-btn" onClick={() => setTab("CTA")}>
+                  Next: CTA →
+                </button>
+              </>
+            )}
+
+            {tab === "CTA" && (
+              <>
+                <SectionLabel n="03">Call to action</SectionLabel>
+                <div className="panel" style={{ marginTop: 0 }}>
+                  <p
+                    style={{
+                      color: "var(--accent)",
+                      fontFamily: "var(--font-display)",
+                      fontWeight: 600,
+                      fontSize: 16,
+                      margin: 0,
+                      lineHeight: 1.55,
+                    }}
+                  >
+                    {data.outreach_sequence.call_to_action}
+                  </p>
+                </div>
+              </>
+            )}
+          </div>
         </>
       )}
     </>

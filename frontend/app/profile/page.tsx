@@ -7,12 +7,15 @@ import { deleteWorkspace } from "@/lib/api";
 import { Empty, Kicker, BaseItems, Reveal } from "@/components/ui";
 import { useWorkspaces } from "@/components/workspace";
 
+const TABS = ["Summary", "Commercial", "Services & keywords"] as const;
+
 export default function ProfilePage() {
   const { active, removeWorkspace } = useWorkspaces();
   const router = useRouter();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
+  const [tab, setTab] = useState<(typeof TABS)[number]>("Summary");
 
   const p = active?.profile;
 
@@ -75,37 +78,67 @@ export default function ProfilePage() {
           </Reveal>
 
           <Reveal i={2}>
-            <div className="profile-grid">
-              <div className="panel">
-                <h3 className="panel-title">Summary</h3>
-                <div className="report-summary plain">{p.company_summary || "—"}</div>
-                <h3 className="panel-title" style={{ marginTop: 18 }}>Description</h3>
-                <p className="profile-body">{p.description || "—"}</p>
-              </div>
-              <div className="panel">
-                <h3 className="panel-title">Commercial</h3>
-                <dl className="kv kv-plain">
-                  <dt>Audience</dt><dd>{p.target_audience || "—"}</dd>
-                  <dt>Brand voice</dt><dd>{p.brand_voice || "—"}</dd>
-                  <dt>Value prop</dt><dd>{p.value_proposition || "—"}</dd>
-                </dl>
-                {(p.products_services ?? []).length > 0 && (
-                  <>
-                    <h3 className="panel-title" style={{ marginTop: 18 }}>Products & services</h3>
-                    <BaseItems items={p.products_services ?? []} />
-                  </>
-                )}
-                {(p.keywords ?? []).length > 0 && (
-                  <>
-                    <h3 className="panel-title" style={{ marginTop: 18 }}>Keywords</h3>
-                    <BaseItems items={p.keywords ?? []} />
-                  </>
-                )}
-              </div>
+            <div className="tabs" role="tablist" style={{ marginTop: "var(--space-2)" }}>
+              {TABS.map((t, i) => (
+                <button
+                  key={t}
+                  role="tab"
+                  aria-selected={tab === t}
+                  className={`tab ${tab === t ? "tab-active" : ""}`}
+                  onClick={() => setTab(t)}
+                >
+                  {t} · 0{i + 1}
+                </button>
+              ))}
             </div>
           </Reveal>
 
           <Reveal i={3}>
+            <div className="tab-view">
+              {tab === "Summary" && (
+                <div className="panel" style={{ marginTop: 0 }}>
+                  <h3 className="panel-title">Business summary</h3>
+                  <div className="report-summary plain">{p.company_summary || "—"}</div>
+                  <h3 className="panel-title" style={{ marginTop: 18 }}>Description</h3>
+                  <p className="profile-body">{p.description || "—"}</p>
+                </div>
+              )}
+
+              {tab === "Commercial" && (
+                <>
+                  <h3 className="section-label" style={{ marginBottom: 8 }}>Commercial positioning</h3>
+                  <div className="panel" style={{ marginTop: 0 }}>
+                    <dl className="kv kv-plain">
+                      <dt>Audience</dt><dd>{p.target_audience || "—"}</dd>
+                      <dt>Brand voice</dt><dd>{p.brand_voice || "—"}</dd>
+                      <dt>Value prop</dt><dd>{p.value_proposition || "—"}</dd>
+                    </dl>
+                  </div>
+                </>
+              )}
+
+              {tab === "Services & keywords" && (
+                <>
+                  <h3 className="section-label" style={{ marginBottom: 8 }}>Products & services</h3>
+                  <div className="panel" style={{ marginTop: 0 }}>
+                    {(p.products_services ?? []).length > 0 ? (
+                      <BaseItems items={p.products_services ?? []} />
+                    ) : (
+                      <p className="profile-body">—</p>
+                    )}
+                    {(p.keywords ?? []).length > 0 && (
+                      <>
+                        <h3 className="panel-title" style={{ marginTop: 18 }}>Keywords</h3>
+                        <BaseItems items={p.keywords ?? []} />
+                      </>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          </Reveal>
+
+          <Reveal i={4}>
             <div style={{ marginTop: "var(--space-4)", display: "flex", justifyContent: "flex-end" }}>
               <button
                 className="run danger-run"

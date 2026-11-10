@@ -1,14 +1,14 @@
-export type CachedRun<T> = { saved: string; data: T };
+export type CachedRun<T> = { saved: string; data: T; label?: string };
 export type HistoryEntry<T> = { saved: string; label: string; data: T };
 
 const keyOf = (k: string) => `agencyos_run_${k}`;
 
-export function saveRun<T>(key: string, data: T) {
+export function saveRun<T>(key: string, data: T, label?: string) {
   if (typeof window === "undefined") return;
   try {
     localStorage.setItem(
       keyOf(key),
-      JSON.stringify({ saved: new Date().toISOString(), data }),
+      JSON.stringify({ saved: new Date().toISOString(), data, ...(label ? { label } : {}) }),
     );
   } catch {}
 }
