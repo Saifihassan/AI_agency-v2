@@ -119,12 +119,12 @@ export default function NewsPage() {
               <>
                 <SectionLabel n="01">Headlines</SectionLabel>
                 <div className="panel" style={{ marginTop: 0 }}>
-                  {data.one_liner_headlines.map((h) => {
+                  {data.one_liner_headlines.map((h, i) => {
                     const linkable = h.url && h.url !== "#";
                     return linkable ? (
                       <a
                         className="headline-row"
-                        key={h.headline}
+                        key={`hl-${i}`}
                         href={h.url}
                         target="_blank"
                         rel="noreferrer"
@@ -132,7 +132,7 @@ export default function NewsPage() {
                         → {h.headline} <span className="hl-arrow">↗</span>
                       </a>
                     ) : (
-                      <div className="headline-row" key={h.headline}>→ {h.headline}</div>
+                      <div className="headline-row" key={`hl-${i}`}>→ {h.headline}</div>
                     );
                   })}
                 </div>
@@ -144,7 +144,7 @@ export default function NewsPage() {
                 <SectionLabel n="02">Market trends ({data.market_trends.length})</SectionLabel>
                 <div className="panel" style={{ marginTop: 0 }}>
                   {data.market_trends.map((t) => (
-                    <div className="finding" key={t.title}>
+                    <div className="finding" key={`t-${t.title}`}>
                       <h4>{t.title}</h4>
                       <p>{t.description}</p>
                     </div>
@@ -158,7 +158,7 @@ export default function NewsPage() {
                 <SectionLabel n="03">Opportunities ({data.opportunities.length})</SectionLabel>
                 <div className="panel" style={{ marginTop: 0 }}>
                   {data.opportunities.map((o) => (
-                    <div className="finding" key={o.title}>
+                    <div className="finding" key={`o-${o.title}`}>
                       <h4>{o.title}</h4>
                       <p>{o.description}</p>
                     </div>
@@ -173,7 +173,7 @@ export default function NewsPage() {
                 {data.categorized_news.map((c) => (
                   <Panel title={c.category} key={c.category}>
                     {c.articles.map((a) => (
-                      <div className="finding" key={a.title}>
+                      <div className="finding" key={`a-${a.title}-${a.url}`}>
                         <h4>
                           {a.url !== "#" ? (
                             <a href={a.url} target="_blank" rel="noopener" style={{ color: "inherit" }}>
