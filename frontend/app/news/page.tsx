@@ -50,6 +50,17 @@ export default function NewsPage() {
     setRunning(false);
   };
 
+  const allSources: { title: string; url: string; source: string }[] = [];
+  if (data) {
+    for (const c of data.categorized_news) {
+      for (const a of c.articles) {
+        if (a.url && a.url !== "#" && !allSources.some((x) => x.url === a.url)) {
+          allSources.push({ title: a.title, url: a.url, source: a.source });
+        }
+      }
+    }
+  }
+
   return (
     <>
       <Reveal><div className="page-head">
@@ -89,6 +100,20 @@ export default function NewsPage() {
               <strong>Showing the last report from this session</strong>
             </p>
           )}
+          {data.one_liner_headlines.length === 0 &&
+          data.categorized_news.length === 0 &&
+          data.market_trends.length === 0 &&
+          data.opportunities.length === 0 ? (
+            <Reveal i={1}>
+              <Empty>
+                Couldn&apos;t find any reportable news in the verified sources
+                ({indLabel || industry}) for right now. The agent only reports
+                from the trusted domain allowlist — no news there this time;
+                try again in a bit.
+              </Empty>
+            </Reveal>
+          ) : (
+          <>
           <div className="report-shade">
             <div className="panel" style={{ marginTop: 0 }}>
               <h3 className="report-title">Industry intelligence</h3>
@@ -190,6 +215,33 @@ export default function NewsPage() {
               </>
             )}
           </div>
+
+          {allSources.length > 0 && (
+            <SectionLabel n="05">Sources processed ({allSources.length})</SectionLabel>
+          )}
+          {allSources.length > 0 && (
+            <div className="panel" style={{ marginTop: 0 }}>
+              <div className="sources-full">
+                {allSources.map((s, i) => (
+                  <a
+                    key={`src-${i}`}
+                    href={s.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="source-row"
+                  >
+                    <span className="source-num">{String(i + 1).padStart(2, "0")}</span>
+                    <span className="source-body">
+                      <span className="source-title">{s.title}</span>
+                      <span className="source-pub">{s.source}</span>
+                    </span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+          </>
+          )}
         </>
       )}
     </>
