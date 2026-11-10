@@ -84,7 +84,7 @@ export type NewsArticle = {
 
 export type MarketIntelligenceReport = {
   generated_at: string;
-  one_liner_headlines: string[];
+  one_liner_headlines: { headline: string; url: string }[];
   categorized_news: { category: string; articles: NewsArticle[] }[];
   market_trends: { title: string; description: string }[];
   opportunities: { title: string; description: string }[];

@@ -116,9 +116,18 @@ export const mockResearch = (
 export const mockNews = (industry: string): MarketIntelligenceReport => ({
   generated_at: `${now()} IST`,
   one_liner_headlines: [
-    "AI agents move from demo to production across the " + industry + " sector",
-    "Buyers consolidate tools; all-in-one platforms gain share",
-    "Search traffic shifts to AI answer engines",
+    {
+      headline: "AI agents move from demo to production across the " + industry + " sector",
+      url: "#",
+    },
+    {
+      headline: "Buyers consolidate tools; all-in-one platforms gain share",
+      url: "#",
+    },
+    {
+      headline: "Search traffic shifts to AI answer engines",
+      url: "#",
+    },
   ],
   categorized_news: [
     {

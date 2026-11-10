@@ -116,11 +116,27 @@ export default function NewsPage() {
 
           <div className="tab-view">
             {tab === "Headlines" && (
-              <Panel title="Headlines · 01">
-                {data.one_liner_headlines.map((h) => (
-                  <div className="headline-row" key={h}>→ {h}</div>
-                ))}
-              </Panel>
+              <>
+                <SectionLabel n="01">Headlines</SectionLabel>
+                <div className="panel" style={{ marginTop: 0 }}>
+                  {data.one_liner_headlines.map((h) => {
+                    const linkable = h.url && h.url !== "#";
+                    return linkable ? (
+                      <a
+                        className="headline-row"
+                        key={h.headline}
+                        href={h.url}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        → {h.headline} <span className="hl-arrow">↗</span>
+                      </a>
+                    ) : (
+                      <div className="headline-row" key={h.headline}>→ {h.headline}</div>
+                    );
+                  })}
+                </div>
+              </>
             )}
 
             {tab === "Trends" && (

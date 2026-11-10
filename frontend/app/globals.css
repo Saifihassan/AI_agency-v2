@@ -410,6 +410,17 @@ button.run:disabled:hover { transform: none; box-shadow: none; }
 }
 .headline-row:last-child { border-bottom: 0; }
 .headline-row::before { color: var(--accent); }
+a.headline-row { color: inherit; text-decoration: none; display: block; }
+a.headline-row:hover { color: var(--accent); }
+.hl-arrow {
+  display: inline-block;
+  margin-left: 4px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  opacity: 0;
+  transition: opacity 0.2s, transform 0.2s;
+}
+a.headline-row:hover .hl-arrow { opacity: 1; transform: translate(2px, -2px); }
 
 .finding { padding: 16px 0; border-bottom: 1px solid var(--line); }
 .finding:last-child { border-bottom: 0; padding-bottom: 2px; }

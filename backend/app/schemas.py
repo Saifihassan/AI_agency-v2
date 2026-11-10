@@ -32,11 +32,15 @@ class MarketTrend(BaseModel):
         description="Explanation of the trend"
     )
 
+class HeadlineLink(BaseModel):
+    headline: str = Field(description="One-sentence punchy headline")
+    url: str = Field(description="Exact URL of the original article this headline came from - copy verbatim from the input articles")
+
 class MarketIntelligenceReport(BaseModel):
     generated_at: str = Field(description="Timestamp")
 
-    one_liner_headlines: List[str] = Field(
-        description="Short dashboard headlines"
+    one_liner_headlines: List[HeadlineLink] = Field(
+        description="Short dashboard headlines, each linked to its original article URL (copied exactly from the input articles, never invented)"
     )
 
     categorized_news: List[CategorizedNews] = Field(
