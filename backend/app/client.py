@@ -11,6 +11,6 @@ velona_client = AsyncOpenAI(
 )
 
 velona = OpenAIChatCompletionsModel(
-    model="upstage/solar-mini4",
+    model="openai/gpt-6-luna-pro",
     openai_client=velona_client,
 )

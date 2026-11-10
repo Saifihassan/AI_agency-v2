@@ -61,6 +61,98 @@ def searxng_search(query: str) -> str:
 
 
 @function_tool
+def news_domain_search(query: str, domains: str) -> str:
+    """
+    Search the web restricted to specific trusted source domains. This is the
+    preferred way to find recent news from verified sources only.
+
+    Args:
+        query: plain search keywords (e.g. "artificial intelligence funding").
+            Do NOT include site: operators — domain restriction is handled
+            by this tool automatically.
+        domains: comma-separated list of allowed domains, e.g.
+            "reuters.com,apnews.com,bbc.com". Keep the list short (1-4 domains)
+            per call and call again with different domains for better coverage.
+    """
+    return _news_domain_search_impl(query=query, domains=domains)
+
+
+
+def _news_domain_search_impl(query: str, domains: str) -> str:
+    """
+    Search the web restricted to specific trusted source domains. This is the
+    preferred way to find recent news from verified sources only.
+
+    Args:
+        query: plain search keywords (e.g. "artificial intelligence funding").
+            Do NOT include site: operators — domain restriction is handled
+            by this tool automatically.
+        domains: comma-separated list of allowed domains, e.g.
+            "reuters.com,apnews.com,bbc.com". Keep the list short (1-4 domains)
+            per call and call again with different domains for better coverage.
+    """
+    include_domains = [d.strip() for d in domains.split(",") if d.strip()]
+    if not include_domains:
+        include_domains = ALLOWED_NEWS_DOMAINS
+    fallback = None
+    try:
+        response = tavily_client.search(
+            query=query,
+            search_depth="advanced",
+            max_results=8,
+            topic="news",
+            days=45,
+            include_domains=include_domains,
+        )
+        results = response.get("results") or []
+        if results:
+            return json.dumps({"source": "tavily", "results": results})
+        fallback = "no results"
+    except Exception as e:
+        fallback = f"tavily unavailable: {str(e)}"
+    try:
+        q = f"({' OR '.join('site:' + d for d in include_domains)}) {query}"
+        payload = json.dumps({"q": q, "num": 8})
+        headers = {
+            "X-API-KEY": os.getenv("SERPER_API_KEY", ""),
+            "Content-Type": "application/json",
+        }
+        response = requests.post(
+            "https://google.serper.dev/search", headers=headers, data=payload, timeout=30
+        )
+        organic = (response.json().get("organic") or [])[:8]
+        normalised = [
+            {
+                "title": r.get("title", ""),
+                "url": r.get("link", ""),
+                "published_date": r.get("date", ""),
+                "summary": r.get("snippet", ""),
+            }
+            for r in organic
+        ]
+        if normalised:
+            return json.dumps({"source": "serper", "results": normalised})
+        return json.dumps({"source": "none", "results": [], "note": fallback})
+    except Exception as e:
+        return json.dumps({"source": "none", "results": [], "note": fallback, "error": str(e)})
+
+
+ALLOWED_NEWS_DOMAINS = (
+    "spectrum.ieee.org",
+    "technews.acm.org",
+    "nist.gov",
+    "warc.com",
+    "iab.com",
+    "thinkwithgoogle.com",
+    "reuters.com",
+    "apnews.com",
+    "bbc.com",
+    "worldbank.org",
+    "ourworldindata.org",
+)
+
+
+@function_tool
 def crawl4ai_scrape(url: str) -> str:
     """
     Scrape the content of a provided URL using hosted crawl4ai API.
