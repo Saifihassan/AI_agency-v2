@@ -1,11 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { apiMode } from "@/lib/api";
-import { loadHistory } from "@/lib/cache";
+import { API_URL } from "@/lib/api";
 import { Kicker, Reveal } from "@/components/ui";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
 export default function SettingsPage() {
   const [apiUp, setApiUp] = useState<boolean | null>(null);
@@ -13,9 +10,13 @@ export default function SettingsPage() {
   const [cleared, setCleared] = useState(false);
 
   useEffect(() => {
-    fetch(`${API_URL}/api/health`, { signal: AbortSignal.timeout(4000) })
-      .then((r) => setApiUp(r.ok))
-      .catch(() => setApiUp(false));
+    if (!API_URL) {
+      setApiUp(false);
+    } else {
+      fetch(`${API_URL}/api/health`, { signal: AbortSignal.timeout(4000) })
+        .then((r) => setApiUp(r.ok))
+        .catch(() => setApiUp(false));
+    }
     try {
       let n = 0;
       for (let i = 0; i < localStorage.length; i++) {

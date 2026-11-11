@@ -1,7 +1,7 @@
 import type { ModuleKind, ModuleResultMap, Workspace } from "./types";
 import { mockRun, mockProfile } from "./mock";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
+const API_URL = (process.env.NEXT_PUBLIC_API_URL || "").trim().replace(/\/+$/, "");
 export { API_URL };
 
 export function apiMode(): string {

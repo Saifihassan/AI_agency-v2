@@ -42,8 +42,8 @@ async def lifespan(app: FastAPI):
 
 
 ALLOWED_ORIGINS = [
-    o.strip()
-    for o in os.getenv("FRONTEND_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",")
+    o.strip().rstrip("/")
+    for o in os.getenv("FRONTEND_ORIGINS", "https://ai-agency-v2-beryl.vercel.app").split(",")
     if o.strip()
 ]
 IS_DEBUG = os.getenv("BACKEND_DEBUG", "0") == "1"

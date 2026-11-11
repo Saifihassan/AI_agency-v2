@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { apiMode, apiConnected, runModule } from "@/lib/api";
+import { apiMode, apiConnected, API_URL, runModule } from "@/lib/api";
 import type { ChatMessage } from "@/lib/types";
 import { Kicker, Reveal } from "@/components/ui";
 import { useWorkspaces } from "@/components/workspace";
@@ -25,7 +25,7 @@ export default function StudioPage() {
 
   useEffect(() => {
     if (!apiConnected() || !active) return;
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/studio/${active.id}/history`)
+    fetch(`${API_URL}/api/studio/${active.id}/history`)
       .then((r) => (r.ok ? r.json() : []))
       .then((rows: { role: string; content: string; response_type: string }[]) =>
         setMessages(
