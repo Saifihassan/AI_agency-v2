@@ -5,7 +5,6 @@ import os
 import json
 import requests
 from duckduckgo_search import DDGS
-from firecrawl import FirecrawlApp
 
 load_dotenv(override=True)
 
@@ -184,6 +183,13 @@ def firecrawl_scrape(url: str) -> str:
     """
     Scrape the content of a provided URL using firecrawl. Use this if crawl4ai fails.
     """
-    app = FirecrawlApp(api_key=os.getenv("FIRECRAWL_API_KEY") or "")
-    result = app.scrape_url(url)
-    return str(result)
+    try:
+        from firecrawl import V1FirecrawlApp
+        app = V1FirecrawlApp(api_key=os.getenv("FIRECRAWL_API_KEY") or "")
+        result = app.scrape_url(url, formats=["markdown"], timeout=60000)
+        md = getattr(result, "markdown", None)
+        if md:
+            return str(md)
+        return str(result)
+    except Exception as e:
+        return f"Error scraping with Firecrawl: {str(e)}"

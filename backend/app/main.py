@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 
 load_dotenv(override=True)
 
+import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -40,11 +41,22 @@ async def lifespan(app: FastAPI):
         yield
 
 
-app = FastAPI(title="AI Agency OS Backend", version="2.0.0", lifespan=lifespan)
+ALLOWED_ORIGINS = [
+    o.strip()
+    for o in os.getenv("FRONTEND_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",")
+    if o.strip()
+]
+IS_DEBUG = os.getenv("BACKEND_DEBUG", "0") == "1"
+
+fastapi_kwargs = dict(title="AI Agency OS Backend", version="2.0.0", lifespan=lifespan)
+if not IS_DEBUG:
+    fastapi_kwargs.update(docs_url=None, redoc_url=None, openapi_url=None)
+
+app = FastAPI(**fastapi_kwargs)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
