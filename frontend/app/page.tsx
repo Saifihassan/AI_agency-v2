@@ -3,27 +3,70 @@
 import Link from "next/link";
 import { useWorkspaces, WorkspaceProvider } from "@/components/workspace";
 import LandNav from "@/components/landnav";
+import LandPreview from "@/components/land-preview";
+import {
+  Streamline,
+  networkSearch,
+  newspaperFold,
+  sendEmailFly,
+  dataTransferDiagonal1,
+  pencil1,
+  businessCard1,
+} from "@/components/icons";
 
-const STATS = [
-  { n: "~3 min", t: "per sourced intelligence report", d: "Research that used to eat an afternoon now runs itself." },
-  { n: "6", t: "specialist agents on the floor", d: "Research, market news, outreach, competitor, content, profile." },
-  { n: "11", t: "verified sources only", d: "Every headline is traceable to a trusted domain or it doesn't ship." },
-  { n: "1 click", t: "from brief to outreach", d: "Prospect analysis plus a full email sequence, ready to send." },
-];
-
-const MODULES = [
-  { href: "/research", k: "(02)", t: "Research", d: "Drop a topic, pick a depth, get a sourced report plus a strategy playbook. What took full days now unfolds while you keep working." },
-  { href: "/news", k: "(03)", t: "Market News", d: "A live intelligence report from trusted outlets — trends, opportunities, headlines — without opening a single tab of news." },
-  { href: "/outreach", k: "(04)", t: "Outreach", d: "Point at a prospect's website. The agent reads it, finds the pain, and writes a sequence you'd actually reply to." },
-  { href: "/competitor", k: "(05)", t: "Competitor", d: "A full teardown of any competitor — snapshot, strengths, gaps, and an attack plan — in the time it takes to make coffee." },
-  { href: "/studio", k: "(06)", t: "Content Studio", d: "Chat with an agent that knows the whole company profile and writes deliverables in it." },
-  { href: "/profile", k: "(00)", t: "Company Profile", d: "One setup pass builds the profile every other agent runs on — set it once, benefit everywhere." },
+const SIGNALS = [
+  {
+    n: "06",
+    label: "Specialist agents",
+    desc: "Profile, Research, Market News, Outreach, Competitor, and Content Studio.",
+  },
+  {
+    n: "11",
+    label: "Allowlisted outlets",
+    desc: "Market briefs pull exclusively from trusted domains like Reuters, BBC, NIST, and WARC.",
+  },
+  {
+    n: "01",
+    label: "Shared client profile",
+    desc: "Indexed once from a website URL and automatically inherited by every agent run.",
+  },
+  {
+    n: "2×",
+    label: "Paired deliverables",
+    desc: "Research outputs pair with strategy playbooks; prospect teardowns pair with email sequences.",
+  },
 ];
 
 const STEPS = [
-  { n: "01", t: "Create a workspace", d: "Paste your client's URL. The profile agent reads the site and builds the company profile in seconds." },
-  { n: "02", t: "Agents run their pass", d: "Research, news and outreach agents work with live web tools — searching, reading, summarizing with sources." },
-  { n: "03", t: "Act on intelligence", d: "Tabs, sources and strategy. Copy, plan or ship it straight from the OS window." },
+  {
+    n: "01",
+    title: "Index a client workspace",
+    desc: "Enter a brand name and URL. The profile agent reads the site and structures audience, voice, products, and positioning.",
+    tag: "profile · shared context",
+    live: true,
+  },
+  {
+    n: "02",
+    title: "Run specialist agents",
+    desc: "Trigger Research, Market News, Outreach, Competitor, or Content Studio—each grounded in live search tools and your active profile.",
+    tag: "web search + scrape",
+    live: false,
+  },
+  {
+    n: "03",
+    title: "Review & ship deliverables",
+    desc: "Inspect findings, verified source pills, strategy actions, and ready-to-send sequences inside one clean workspace shell.",
+    tag: "sqlite + local cache",
+    live: false,
+  },
+];
+
+const SPECS = [
+  { k: "Frontend", v: "Next.js 16 · App Router · React 19" },
+  { k: "Backend", v: "FastAPI · Agent Orchestration" },
+  { k: "Persistence", v: "SQLite DB + Browser localStorage" },
+  { k: "Verification", v: "11-domain allowlist + source citations" },
+  { k: "Offline Mode", v: "Built-in mock runner when API is down" },
 ];
 
 function LandInner() {
@@ -33,102 +76,279 @@ function LandInner() {
     <div className="land-page">
       <LandNav />
 
-      <header className="land-hero">
-        <div className="land-hero-copy">
-          <p className="kicker land-kicker"><sup>(01)</sup> An operating system for marketing agencies</p>
-          <h1>
-            The research floor of your agency,
-            <em className="land-accent-word"> running itself .</em>
+      <main>
+        <header className="land-hero">
+          <h1 className="land-title">
+            Your agency’s research floor,
+            <span> engineered as an OS.</span>
           </h1>
-          <p className="land-sub">
-            AI Agency OS v2 puts six agents on your team — researching, writing
-            and monitoring value — attaching them as little 30-minute
-            add-ons to your day.
-          </p>
-          <div className="land-cta-row">
-            <Link href="/dashboard" className="run land-btn-main">Open the OS</Link>
-            <Link href="/workspaces" className="run land-btn-ghost">
-              {workspaces.length > 0 ? "Continue in your workspace" : "Create your first workspace"}
-            </Link>
-          </div>
-          <p className="land-hero-foot">
-            runs entirely on your own stack — Next.js + FastAPI + SQLite.
-          </p>
-        </div>
 
-        <div className="land-hero-card" aria-hidden="true">
-          <div className="land-hero-card-top">
-            <span className="dot ok" /><span className="report-mini-label">verified sources</span>
-          </div>
-          <h3 className="report-shade-h">Industry intelligence</h3>
-          <div className="land-hero-lines">
-            <span />
-            <span style={{ width: "84%" }} />
-            <span style={{ width: "70%" }} />
-          </div>
-          <div className="land-hero-chips">
-            <span>Reuters</span>
-            <span>BBC</span>
-            <span>NIST</span>
-            <span>Think with Google</span>
-            <span>IAB</span>
-            <span>WARC</span>
-          </div>
-          <p className="land-hero-time">generated in 3m 12s</p>
-        </div>
-      </header>
+          <div className="land-hero-split">
+            <p className="land-sub">
+              Six specialist AI agents unified around one client workspace
+              profile—turning market research, verified news sweeps, prospect
+              outreach, competitor teardowns, and campaign drafting into
+              structured workflows.
+            </p>
 
-      <section className="land-stats">
-        {STATS.map((s) => (
-          <div className="land-stat" key={s.t}>
-            <strong>{s.n}</strong>
-            <span>{s.t}</span>
-            <p>{s.d}</p>
-          </div>
-        ))}
-      </section>
-
-      <section className="land-modules">
-        <p className="kicker land-kicker"><sup>(02)</sup> What the agents take off your plate</p>
-        <h2 className="land-h2">Hours of manual work, turned into executive minutes.</h2>
-        <div className="land-mod-grid">
-          {MODULES.map((m) => (
-            <Link href={m.href} className="land-mod" key={m.href}>
-              <span className="land-mod-k">{m.k}</span>
-              <h3>{m.t}</h3>
-              <p>{m.d}</p>
-              <span className="land-mod-arrow">→</span>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      <section className="land-how">
-        <p className="kicker land-kicker"><sup>(03)</sup> How it saves the time</p>
-        <h2 className="land-h2">Three steps. No research tab graveyard.</h2>
-        <div className="land-steps">
-          {STEPS.map((st) => (
-            <div className="land-step" key={st.n}>
-              <span className="land-step-num">{st.n}</span>
-              <h3>{st.t}</h3>
-              <p>{st.d}</p>
+            <div className="land-hero-actions">
+              <div className="land-cta-row">
+                <Link href="/dashboard" className="run land-btn-main">
+                  Open the OS <span aria-hidden="true">→</span>
+                </Link>
+                <Link href="/workspaces" className="run land-btn-ghost">
+                  {workspaces.length > 0 ? "Switch workspace" : "Create workspace"}
+                </Link>
+              </div>
+              <p className="land-hero-meta">
+                Self-hosted on Next.js + FastAPI + SQLite · Mock-ready out of the box
+              </p>
             </div>
-          ))}
-        </div>
-      </section>
+          </div>
+        </header>
 
-      <section className="land-band">
-        <div className="land-band-inner">
-          <h2>Stop researching. Start shipping.</h2>
-          <p>Open the OS, drop a workspace, and watch the floor work.</p>
-          <Link href="/dashboard" className="run land-band-btn">Open the OS</Link>
-        </div>
-      </section>
+        <section id="preview" className="land-preview-sec" aria-label="Interactive OS preview">
+          <LandPreview />
+        </section>
+
+        <section className="land-signals-sec" aria-label="Operating system metrics">
+          <div className="land-signals">
+            {SIGNALS.map((s) => (
+              <div className="land-signal" key={s.label}>
+                <span className="land-signal-num">{s.n}</span>
+                <strong>{s.label}</strong>
+                <p>{s.desc}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section id="agents" className="land-section">
+          <div className="land-sec-head">
+            <p className="kicker land-kicker">
+              <sup>(01)</sup> The Agent Floor
+            </p>
+            <h2 className="land-h2">
+              Six focused modules. Zero tab graveyard.
+            </h2>
+          </div>
+
+          <div className="land-bento">
+            <Link href="/research" className="land-bento-card land-bento-lead">
+              <div className="land-bento-top">
+                <span className="land-bento-ico">
+                  <Streamline icon={networkSearch} size={18} />
+                </span>
+                <span className="land-bento-code">01 / RESEARCH &amp; STRATEGY</span>
+                <span className="land-bento-arrow" aria-hidden="true">↗</span>
+              </div>
+              <h3>Sourced intelligence paired with an executive playbook.</h3>
+              <p>
+                Choose Quick, Standard, or Deep depth. Receive structured
+                findings backed by citations alongside prioritized
+                recommendations, quick wins, and long-term plays.
+              </p>
+              <div className="land-bento-chips">
+                <span>Quick / Standard / Deep</span>
+                <span>Executive Summary</span>
+                <span>Cited Sources</span>
+                <span>Strategy Playbook</span>
+              </div>
+            </Link>
+
+            <Link href="/outreach" className="land-bento-card land-bento-span2">
+              <div className="land-bento-top">
+                <span className="land-bento-ico">
+                  <Streamline icon={sendEmailFly} size={18} />
+                </span>
+                <span className="land-bento-code">02 / OUTREACH</span>
+                <span className="land-bento-arrow" aria-hidden="true">↗</span>
+              </div>
+              <h3>Prospect analysis to cold sequence.</h3>
+              <p>
+                Point at a prospect’s URL to extract positioning gaps, pain
+                points, subject lines, a cold email, and two follow-ups.
+              </p>
+              <div className="land-bento-chips">
+                <span>Pain Diagnosis</span>
+                <span>3-Email Sequence</span>
+              </div>
+            </Link>
+
+            <Link href="/news" className="land-bento-card land-bento-span2">
+              <div className="land-bento-top">
+                <span className="land-bento-ico">
+                  <Streamline icon={newspaperFold} size={18} />
+                </span>
+                <span className="land-bento-code">03 / MARKET NEWS</span>
+                <span className="land-bento-arrow" aria-hidden="true">↗</span>
+              </div>
+              <h3>Live signals from verified outlets only.</h3>
+              <p>
+                Domain-restricted news sweep across 11 trusted sources,
+                synthesized into categorized articles, trends, and opportunities.
+              </p>
+              <div className="land-bento-chips">
+                <span>11 Trusted Domains</span>
+                <span>Trend Radar</span>
+              </div>
+            </Link>
+
+            <Link href="/competitor" className="land-bento-card land-bento-span2">
+              <div className="land-bento-top">
+                <span className="land-bento-ico">
+                  <Streamline icon={dataTransferDiagonal1} size={18} />
+                </span>
+                <span className="land-bento-code">04 / COMPETITOR</span>
+                <span className="land-bento-arrow" aria-hidden="true">↗</span>
+              </div>
+              <h3>Instant competitive teardowns.</h3>
+              <p>
+                Analyze any rival website for market position, differentiators,
+                strengths, weaknesses, and a recommended counter-strategy.
+              </p>
+              <div className="land-bento-chips">
+                <span>SWOT Snapshot</span>
+                <span>Counter-Strategy</span>
+              </div>
+            </Link>
+
+            <Link href="/studio" className="land-bento-card land-bento-span2">
+              <div className="land-bento-top">
+                <span className="land-bento-ico">
+                  <Streamline icon={pencil1} size={18} />
+                </span>
+                <span className="land-bento-code">05 / CONTENT STUDIO</span>
+                <span className="land-bento-arrow" aria-hidden="true">↗</span>
+              </div>
+              <h3>Brand-aware campaign drafting.</h3>
+              <p>
+                Chat directly with a strategist grounded in your workspace
+                profile to plan campaigns and generate copy, social posts, and CTAs.
+              </p>
+              <div className="land-bento-chips">
+                <span>Conversational</span>
+                <span>Copy &amp; Social Assets</span>
+              </div>
+            </Link>
+
+            <Link href="/profile" className="land-bento-card land-bento-wide">
+              <div className="land-bento-wide-copy">
+                <div className="land-bento-top">
+                  <span className="land-bento-ico">
+                    <Streamline icon={businessCard1} size={18} />
+                  </span>
+                  <span className="land-bento-code">00 / COMPANY PROFILE · SHARED FOUNDATION</span>
+                  <span className="land-bento-arrow" aria-hidden="true">↗</span>
+                </div>
+                <h3>Set the client profile once. Power every agent automatically.</h3>
+                <p>
+                  Every workspace extracts and stores structured company context so
+                  research, news, outreach, competitor analysis, and content stay
+                  aligned without re-prompting.
+                </p>
+              </div>
+              <div className="land-bento-schema" aria-hidden="true">
+                <span>Brand Voice</span>
+                <span>Target Audience</span>
+                <span>Value Proposition</span>
+                <span>Products &amp; Services</span>
+                <span>Keywords</span>
+                <span>Company Summary</span>
+              </div>
+            </Link>
+          </div>
+        </section>
+
+        <section id="workflow" className="land-section">
+          <div className="land-sec-head">
+            <p className="kicker land-kicker">
+              <sup>(02)</sup> Execution Loop
+            </p>
+            <h2 className="land-h2">
+              Three clean steps from client URL to deliverables.
+            </h2>
+          </div>
+
+          <div className="land-pipeline">
+            {STEPS.map((st) => (
+              <div className="land-pipe-step" key={st.n}>
+                <div className="land-pipe-top">
+                  <span className={`land-pipe-num ${st.live ? "live" : ""}`}>
+                    {st.n}
+                  </span>
+                  <span className="land-pipe-tag">{st.tag}</span>
+                </div>
+                <h3>{st.title}</h3>
+                <p>{st.desc}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section id="stack" className="land-section">
+          <div className="land-stack-grid">
+            <div className="land-stack-copy">
+              <p className="kicker land-kicker">
+                <sup>(03)</sup> System Architecture
+              </p>
+              <h2 className="land-h2">
+                Full-stack local control. Built-in mock fallback.
+              </h2>
+              <p className="land-stack-p">
+                AI Agency OS v2 keeps client profiles, agent runs, and chat
+                history on your own infrastructure—combining a fast Next.js
+                workspace shell with FastAPI agent pipelines and SQLite storage.
+                When the backend is offline, every module seamlessly falls back
+                to deterministic mock runs so you can inspect workflows anytime.
+              </p>
+            </div>
+
+            <div className="land-spec-card">
+              <div className="land-spec-head">
+                <span className="land-pulse-dot" aria-hidden="true" />
+                <span>SYSTEM MANIFEST</span>
+              </div>
+              <dl className="land-spec-list">
+                {SPECS.map((row) => (
+                  <div className="land-spec-row" key={row.k}>
+                    <dt>{row.k}</dt>
+                    <dd>{row.v}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          </div>
+        </section>
+
+        <section className="land-closing">
+          <div className="land-closing-card">
+            <div className="land-closing-copy">
+              <span className="land-closing-kicker">READY WHEN YOU ARE</span>
+              <h2>Put six specialist agents on your agency floor.</h2>
+              <p>
+                Create a client workspace and run your first sourced brief in
+                minutes.
+              </p>
+            </div>
+            <Link href="/dashboard" className="land-closing-btn">
+              Open the OS <span aria-hidden="true">→</span>
+            </Link>
+          </div>
+        </section>
+      </main>
 
       <footer className="land-footer">
-        <span>AI Agency OS v2</span>
-        <span>full-stack · Next.js + FastAPI</span>
-        <Link href="/settings">Settings</Link>
+        <div className="land-footer-brand">
+          <strong>AI Agency OS v2</strong>
+          <span>Full-stack marketing agency operating system</span>
+        </div>
+        <div className="land-footer-links">
+          <a href="#preview">Preview</a>
+          <a href="#agents">Agents</a>
+          <a href="#workflow">Workflow</a>
+          <Link href="/dashboard">Open the OS</Link>
+        </div>
       </footer>
     </div>
   );

@@ -4,11 +4,11 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 
-const LINKS = [
-  { href: "/", label: "Home" },
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/profile", label: "Profile" },
-  { href: "/settings", label: "Settings" },
+const SECTIONS = [
+  { href: "#preview", label: "Preview" },
+  { href: "#agents", label: "Agents" },
+  { href: "#workflow", label: "Workflow" },
+  { href: "#stack", label: "Stack" },
 ];
 
 export default function LandNav() {
@@ -17,8 +17,11 @@ export default function LandNav() {
   const [origin, setOrigin] = useState({ x: 39, y: 39 });
   const [scrolled, setScrolled] = useState(false);
 
-  function setMenuWatch() {
-    if (!open) return;
+  useEffect(() => {
+    if (!open) {
+      document.body.style.overflow = "";
+      return;
+    }
     const esc = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpen(false);
     };
@@ -28,20 +31,13 @@ export default function LandNav() {
       document.removeEventListener("keydown", esc);
       document.body.style.overflow = "";
     };
-  }
-
-  useEffect(() => {
-    if (!open) {
-      document.body.style.overflow = "";
-      return;
-    }
-    setMenuWatch();
   }, [open]);
 
   useEffect(() => {
-    const h = () => setScrolled(window.scrollY > 8);
-    window.addEventListener("scroll", h, { passive: true });
-    return () => window.removeEventListener("scroll", h);
+    const onScroll = () => setScrolled(window.scrollY > 12);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   useEffect(() => {
@@ -50,37 +46,44 @@ export default function LandNav() {
 
   return (
     <>
-      <nav className={`land-nav ${scrolled ? "scrolled" : ""}`}>
-        <div className="land-nav-inner">
+      <header className={`land-nav-wrap ${scrolled ? "scrolled" : ""}`}>
+        <nav className="land-nav" aria-label="Landing navigation">
           <Link href="/" className="land-brand">
             <span className="brand-mark">A</span>
             <strong>AI Agency OS</strong>
             <em>v2</em>
           </Link>
-          <div className="land-links">
-            {LINKS.map((l) => (
-              <Link key={l.href} href={l.href} className={path === l.href ? "active" : ""}>
-                {l.label}
-              </Link>
+
+          <div className="land-anchors">
+            {SECTIONS.map((item) => (
+              <a key={item.href} href={item.href}>
+                {item.label}
+              </a>
             ))}
-            <Link href="/dashboard" className="land-cta">
-              Open the OS
-            </Link>
           </div>
-          <button
-            className="menu-btn land-menu-btn"
-            aria-label="Open menu"
-            aria-expanded={open}
-            onClick={(e) => {
-              const r = e.currentTarget.getBoundingClientRect();
-              setOrigin({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
-              setOpen(true);
-            }}
-          >
-            <span /><span /><span />
-          </button>
-        </div>
-      </nav>
+
+          <div className="land-nav-actions">
+            <Link href="/dashboard" className="land-cta">
+              Open the OS <span aria-hidden="true">→</span>
+            </Link>
+            <button
+              type="button"
+              className="menu-btn land-menu-btn"
+              aria-label="Open navigation menu"
+              aria-expanded={open}
+              onClick={(e) => {
+                const r = e.currentTarget.getBoundingClientRect();
+                setOrigin({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
+                setOpen(true);
+              }}
+            >
+              <span />
+              <span />
+              <span />
+            </button>
+          </div>
+        </nav>
+      </header>
 
       <div
         className={`menu-screen ${open ? "open" : ""}`}
@@ -90,8 +93,9 @@ export default function LandNav() {
         }}
       >
         <button
+          type="button"
           className="menu-close"
-          aria-label="Close menu"
+          aria-label="Close navigation menu"
           onClick={() => setOpen(false)}
         >
           ✕
@@ -104,18 +108,26 @@ export default function LandNav() {
               <span>v2 · full-stack</span>
             </div>
           </div>
-          <nav className="land-menu-links">
-            {LINKS.map((l, i) => (
-              <Link
-                key={l.href}
-                href={l.href}
-                className={`menu-fade ${path === l.href ? "active" : ""}`}
+          <nav className="land-menu-links" aria-label="Mobile navigation">
+            {SECTIONS.map((item, i) => (
+              <a
+                key={item.href}
+                href={item.href}
+                className="menu-fade"
                 style={{ ["--i" as string]: i + 1 }}
                 onClick={() => setOpen(false)}
               >
-                {l.label}
-              </Link>
+                {item.label}
+              </a>
             ))}
+            <Link
+              href="/dashboard"
+              className="menu-fade land-menu-cta"
+              style={{ ["--i" as string]: SECTIONS.length + 1 }}
+              onClick={() => setOpen(false)}
+            >
+              Open the OS →
+            </Link>
           </nav>
         </div>
       </div>
