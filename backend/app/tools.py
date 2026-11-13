@@ -19,7 +19,7 @@ def tavily_search(query: str) -> str:
     response = tavily_client.search(
         query=query,
         search_depth="advanced",
-        max_results=5,
+        max_results=10,
     )
     return str(response.get("results"))
 
@@ -29,7 +29,7 @@ def duckduckgo_search(query: str) -> str:
     """
     Search the web using DuckDuckGo for up-to-date information.
     """
-    results = DDGS().text(query, max_results=5)
+    results = DDGS().text(query, max_results=10)
     return str(results)
 
 
@@ -82,7 +82,7 @@ def _news_domain_search_impl(query: str, domains: str) -> str:
         response = tavily_client.search(
             query=query,
             search_depth="advanced",
-            max_results=8,
+            max_results=10,
             topic="news",
             days=45,
             include_domains=include_domains,
