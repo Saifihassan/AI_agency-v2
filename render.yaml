@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: ai-agency-os-v2-backend
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: FRONTEND_ORIGINS
+        sync: false
+      - key: VELONA_BASE_URL
+        value: https://api.velona.io/v1
+      - key: VELONA_API_KEY
+        sync: false
+      # Add your search/scrape env vars in the Render dashboard as needed:
+      # TAVILY_API_KEY, SERPER_API_KEY, SEARXNG_URL, CRAWL4AI_URL,
+      # CRAWL4AI_API_TOKEN, FIRECRAWL_API_KEY, DATABASE_PATH

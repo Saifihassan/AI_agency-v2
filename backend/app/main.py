@@ -41,11 +41,12 @@ async def lifespan(app: FastAPI):
         yield
 
 
+_origins_env = os.getenv("FRONTEND_ORIGINS") or os.getenv("FRONTEND_URL", "")
 ALLOWED_ORIGINS = [
     o.strip().rstrip("/")
-    for o in os.getenv("FRONTEND_ORIGINS", "https://ai-agency-v2-beryl.vercel.app").split(",")
+    for o in _origins_env.split(",")
     if o.strip()
-]
+] or ["http://localhost:3000", "http://127.0.0.1:3000"]
 IS_DEBUG = os.getenv("BACKEND_DEBUG", "0") == "1"
 
 fastapi_kwargs = dict(title="AI Agency OS Backend", version="2.0.0", lifespan=lifespan)

@@ -1,8 +1,19 @@
 import os
+import shutil
 from agents.mcp import MCPServerStdio
 from agents import Agent
 
-OBSCURA_CMD = os.path.expanduser("~/obscura")
+OBSCURA_CMD = os.path.expanduser(os.getenv("OBSCURA_CMD", "~/obscura"))
+
+
+def obscura_available() -> bool:
+    """Return True when the local obscura MCP binary is enabled and executable."""
+    if os.getenv("ENABLE_OBSCURA_MCP", "1") == "0":
+        return False
+    return bool(
+        shutil.which(OBSCURA_CMD)
+        or (os.path.isfile(OBSCURA_CMD) and os.access(OBSCURA_CMD, os.X_OK))
+    )
 
 
 def web_research_agents() -> list[Agent]:
