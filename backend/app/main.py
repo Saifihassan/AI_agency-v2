@@ -35,9 +35,13 @@ init_database()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    server = make_obscura_server()
-    async with server:
-        attach_mcp(server, web_research_agents())
+    try:
+        server = make_obscura_server()
+        async with server:
+            attach_mcp(server, web_research_agents())
+            yield
+    except Exception as e:
+        print(f"WARNING: obscura MCP unavailable, agents run without it: {e}")
         yield
 
 
@@ -63,7 +67,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-init_database()
+try:
+    init_database()
+except Exception as e:
+    print(f"WARNING: database init skipped (read-only filesystem?): {e}")
 
 
 class CreateWorkspaceRequest(BaseModel):
