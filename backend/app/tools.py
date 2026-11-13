@@ -4,7 +4,7 @@ from agents import function_tool
 import os
 import json
 import requests
-from duckduckgo_search import DDGS
+from ddgs import DDGS
 
 load_dotenv(override=True)
 
