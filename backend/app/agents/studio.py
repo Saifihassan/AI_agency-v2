@@ -1,7 +1,7 @@
 from agents import Agent, Runner, trace
 from app.schemas import CampaignPlan, CampaignAssets, ManagerResponse
 from app.client import velona
-from app.tools import searxng_search, duckduckgo_search, tavily_search, serper_search, crawl4ai_scrape, firecrawl_scrape
+from app.tools import searxng_search, duckduckgo_search, tavily_search, crawl4ai_scrape, firecrawl_scrape
 from app.agents.prompts import (
     CAMPAIGN_PLANNER_INSTRUCTIONS,
     CONTENT_GENERATOR_INSTRUCTIONS,
@@ -13,7 +13,7 @@ campaign_planner = Agent(
     instructions=CAMPAIGN_PLANNER_INSTRUCTIONS,
     model=velona,
     output_type=CampaignPlan,
-    tools=[searxng_search, duckduckgo_search, tavily_search, serper_search, crawl4ai_scrape, firecrawl_scrape],
+    tools=[searxng_search, duckduckgo_search, tavily_search, crawl4ai_scrape, firecrawl_scrape],
 )
 
 content_generator = Agent(

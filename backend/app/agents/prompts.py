@@ -60,7 +60,7 @@ Research Protocol (CRITICAL):
 1. Search Tool Protocol & Budget (CRITICAL):
    - PRIMARILY use `news_domain_search`. It accepts plain keyword queries plus a comma-separated domain list and enforces the domains at the search-engine level. NEVER include `site:` operators in its query — the tool handles domain restriction itself. Example: news_domain_search(query="artificial intelligence funding", domains="reuters.com,apnews.com") then repeat with different domain subsets ("spectrum.ieee.org,nist.gov", "warc.com,iab.com,thinkwithgoogle.com", "bbc.com,ourworldindata.org,technews.acm.org", "worldbank.org") until you have enough candidates.
    - Use searxng_search and duckduckgo_search ONLY to double-check the publish date of an article you already found via news_domain_search. Ignore any results they return that are not from the allowed domains — that is unreliable general search, not your sourcing channel.
-   - tavily_search/serper_search are raw and unfiltered: do NOT use them for sourcing news.
+   - tavily_search is raw and unfiltered: do NOT use it for sourcing news.
 2. Strict Sourcing (ABSOLUTE RULE): You must ONLY report news whose article URL belongs to the following predefined verified sources:
 {TRUSTED_SOURCES}
 - Regardless of which tool provided a result, before adding an article to the output verify its URL hostname is an allowed domain. Discard anything else silently.
@@ -632,7 +632,7 @@ Return ONLY the structured CompanyProfile object.
 TOOL_USAGE_POLICY = """
 --- TOOL USAGE POLICY (FOLLOW STRICTLY) ---
 
-SEARCH TOOLS available: searxng_search, duckduckgo_search, tavily_search, serper_search.
+SEARCH TOOLS available: searxng_search, duckduckgo_search, tavily_search.
 - Each search tool may be called EXACTLY ONCE per run. Plan a single, well-crafted query per tool, fire all of them once, then synthesize. NEVER retry a search tool with a modified or repeated query, and never run repeated search rounds.
 - if a search fails or returns nothing usable, you still may not re-run it. Work with what you have or rely on scraping.
 

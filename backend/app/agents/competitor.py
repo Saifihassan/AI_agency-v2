@@ -1,7 +1,7 @@
 from agents import Agent, Runner, trace
 from app.schemas import CompetitiveAnalysis
 from app.client import velona
-from app.tools import searxng_search, duckduckgo_search, tavily_search, serper_search, crawl4ai_scrape, firecrawl_scrape
+from app.tools import searxng_search, duckduckgo_search, tavily_search, crawl4ai_scrape, firecrawl_scrape
 from app.agents.prompts import COMPETITOR_ANALYZER_INSTRUCTIONS
 
 competitor_analyzer = Agent(
@@ -9,7 +9,7 @@ competitor_analyzer = Agent(
     instructions=COMPETITOR_ANALYZER_INSTRUCTIONS,
     model=velona,
     output_type=CompetitiveAnalysis,
-    tools=[searxng_search, duckduckgo_search, tavily_search, serper_search, crawl4ai_scrape, firecrawl_scrape],
+    tools=[searxng_search, duckduckgo_search, tavily_search, crawl4ai_scrape, firecrawl_scrape],
 )
 
 

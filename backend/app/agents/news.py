@@ -10,7 +10,6 @@ from app.tools import (
     tavily_search,
     duckduckgo_search,
     searxng_search,
-    serper_search,
     news_domain_search,
     ALLOWED_NEWS_DOMAINS,
 )
@@ -24,7 +23,7 @@ news_researcher = Agent(
     name="news_researcher",
     instructions=NEWS_RESEARCHER_INSTRUCTIONS,
     model=velona,
-    tools=[news_domain_search, searxng_search, duckduckgo_search, tavily_search, serper_search],
+    tools=[news_domain_search, searxng_search, duckduckgo_search, tavily_search],
     output_type=NewsResearch,
 )
 

@@ -1,7 +1,7 @@
 from agents import Agent, Runner, trace
 from app.schemas import CompanyProfile
 from app.client import velona
-from app.tools import searxng_search, duckduckgo_search, tavily_search, serper_search, crawl4ai_scrape, firecrawl_scrape
+from app.tools import searxng_search, duckduckgo_search, tavily_search, crawl4ai_scrape, firecrawl_scrape
 from app.agents.prompts import COMPANY_PROFILE_GENERATOR_INSTRUCTIONS
 
 company_profile_agent = Agent(
@@ -9,7 +9,7 @@ company_profile_agent = Agent(
     instructions=COMPANY_PROFILE_GENERATOR_INSTRUCTIONS,
     model=velona,
     output_type=CompanyProfile,
-    tools=[searxng_search, duckduckgo_search, tavily_search, serper_search, crawl4ai_scrape, firecrawl_scrape],
+    tools=[searxng_search, duckduckgo_search, tavily_search, crawl4ai_scrape, firecrawl_scrape],
 )
 
 

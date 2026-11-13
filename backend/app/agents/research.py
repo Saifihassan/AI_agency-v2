@@ -1,7 +1,7 @@
 from agents import Agent, Runner, trace
 from app.schemas import ResearchAnalysis, StrategyReport
 from app.client import velona
-from app.tools import searxng_search, duckduckgo_search, tavily_search, serper_search, crawl4ai_scrape, firecrawl_scrape
+from app.tools import searxng_search, duckduckgo_search, tavily_search, crawl4ai_scrape, firecrawl_scrape
 from app.agents.prompts import RESEARCH_ANALYST, STRATEGY_ADVISOR
 
 research_analyst = Agent(
@@ -9,7 +9,7 @@ research_analyst = Agent(
     instructions=RESEARCH_ANALYST,
     output_type=ResearchAnalysis,
     model=velona,
-    tools=[searxng_search, duckduckgo_search, tavily_search, serper_search],
+    tools=[searxng_search, duckduckgo_search, tavily_search],
 )
 
 strategy_advisor = Agent(

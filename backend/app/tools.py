@@ -34,21 +34,6 @@ def duckduckgo_search(query: str) -> str:
 
 
 @function_tool
-def serper_search(query: str) -> str:
-    """
-    Search the web using Google Search (via Serper API) for up-to-date information.
-    """
-    url = "https://google.serper.dev/search"
-    payload = json.dumps({"q": query, "num": 5})
-    headers = {
-        "X-API-KEY": os.getenv("SERPER_API_KEY", ""),
-        "Content-Type": "application/json",
-    }
-    response = requests.post(url, headers=headers, data=payload, timeout=30)
-    return str(response.json())
-
-
-@function_tool
 def searxng_search(query: str) -> str:
     """
     Search the web using SearXNG for up-to-date information.
@@ -93,7 +78,6 @@ def _news_domain_search_impl(query: str, domains: str) -> str:
     include_domains = [d.strip() for d in domains.split(",") if d.strip()]
     if not include_domains:
         include_domains = ALLOWED_NEWS_DOMAINS
-    fallback = None
     try:
         response = tavily_client.search(
             query=query,
@@ -106,34 +90,9 @@ def _news_domain_search_impl(query: str, domains: str) -> str:
         results = response.get("results") or []
         if results:
             return json.dumps({"source": "tavily", "results": results})
-        fallback = "no results"
+        return json.dumps({"source": "none", "results": []})
     except Exception as e:
-        fallback = f"tavily unavailable: {str(e)}"
-    try:
-        q = f"({' OR '.join('site:' + d for d in include_domains)}) {query}"
-        payload = json.dumps({"q": q, "num": 8})
-        headers = {
-            "X-API-KEY": os.getenv("SERPER_API_KEY", ""),
-            "Content-Type": "application/json",
-        }
-        response = requests.post(
-            "https://google.serper.dev/search", headers=headers, data=payload, timeout=30
-        )
-        organic = (response.json().get("organic") or [])[:8]
-        normalised = [
-            {
-                "title": r.get("title", ""),
-                "url": r.get("link", ""),
-                "published_date": r.get("date", ""),
-                "summary": r.get("snippet", ""),
-            }
-            for r in organic
-        ]
-        if normalised:
-            return json.dumps({"source": "serper", "results": normalised})
-        return json.dumps({"source": "none", "results": [], "note": fallback})
-    except Exception as e:
-        return json.dumps({"source": "none", "results": [], "note": fallback, "error": str(e)})
+        return json.dumps({"source": "none", "results": [], "error": str(e)})
 
 
 ALLOWED_NEWS_DOMAINS = (
