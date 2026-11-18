@@ -51,7 +51,6 @@ export default function LandNav() {
           <Link href="/" className="land-brand">
             <span className="brand-mark">A</span>
             <strong>AI Agency OS</strong>
-            <em>v2</em>
           </Link>
 
           <div className="land-anchors">
@@ -105,7 +104,7 @@ export default function LandNav() {
             <span className="brand-mark">A</span>
             <div className="brand-text">
               <strong>AI Agency OS</strong>
-              <span>v2 · full-stack</span>
+              <span>full-stack</span>
             </div>
           </div>
           <nav className="land-menu-links" aria-label="Mobile navigation">

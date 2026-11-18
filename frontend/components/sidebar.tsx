@@ -77,7 +77,7 @@ export default function Sidebar() {
         <span className="brand-mark">A</span>
         <div className="brand-text">
           <strong>AI Agency OS</strong>
-          <span>v2 · full-stack</span>
+          <span>full-stack</span>
         </div>
       </div>
 
