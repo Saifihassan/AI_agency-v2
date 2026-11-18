@@ -2206,3 +2206,25 @@ a.headline-row:hover .hl-arrow { opacity: 1; transform: translate(2px, -2px); }
   padding: 0;
 }
 .user-logout:hover { color: #b3261e; }
+
+.land-login {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  padding: 8px 18px;
+  border-radius: 999px;
+  font-size: 13.5px;
+  font-weight: 600;
+  transition: border-color 0.2s, background 0.2s;
+}
+.land-login:hover {
+  border-color: var(--ink);
+  background: rgba(23, 22, 15, 0.04);
+}
+.land-menu-cta-ghost {
+  opacity: 0.75;
+  font-weight: 500;
+}

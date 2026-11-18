@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import { useAuthUser } from "@/lib/supabase/useauth";
 
 const SECTIONS = [
   { href: "#preview", label: "Preview" },
@@ -16,6 +17,7 @@ export default function LandNav() {
   const [open, setOpen] = useState(false);
   const [origin, setOrigin] = useState({ x: 39, y: 39 });
   const [scrolled, setScrolled] = useState(false);
+  const { user } = useAuthUser();
 
   useEffect(() => {
     if (!open) {
@@ -62,9 +64,20 @@ export default function LandNav() {
           </div>
 
           <div className="land-nav-actions">
-            <Link href="/dashboard" className="land-cta">
-              Open the OS <span aria-hidden="true">→</span>
-            </Link>
+            {user ? (
+              <Link href="/dashboard" className="land-cta">
+                Open the OS <span aria-hidden="true">→</span>
+              </Link>
+            ) : (
+              <>
+                <Link href="/login" className="land-login">
+                  Log in
+                </Link>
+                <Link href="/signup" className="land-cta">
+                  Sign up free <span aria-hidden="true">→</span>
+                </Link>
+              </>
+            )}
             <button
               type="button"
               className="menu-btn land-menu-btn"
@@ -120,13 +133,23 @@ export default function LandNav() {
               </a>
             ))}
             <Link
-              href="/dashboard"
+              href={user ? "/dashboard" : "/signup"}
               className="menu-fade land-menu-cta"
               style={{ ["--i" as string]: SECTIONS.length + 1 }}
               onClick={() => setOpen(false)}
             >
-              Open the OS →
+              {user ? "Open the OS →" : "Sign up free →"}
             </Link>
+            {!user && (
+              <Link
+                href="/login"
+                className="menu-fade land-menu-cta land-menu-cta-ghost"
+                style={{ ["--i" as string]: SECTIONS.length + 2 }}
+                onClick={() => setOpen(false)}
+              >
+                Log in →
+              </Link>
+            )}
           </nav>
         </div>
       </div>

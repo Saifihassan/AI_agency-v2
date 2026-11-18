@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useWorkspaces, WorkspaceProvider } from "@/components/workspace";
+import { useAuthUser } from "@/lib/supabase/useauth";
 import LandNav from "@/components/landnav";
 import LandPreview from "@/components/land-preview";
 import {
@@ -71,6 +72,7 @@ const SPECS = [
 
 function LandInner() {
   const { workspaces } = useWorkspaces();
+  const { user } = useAuthUser();
 
   return (
     <div className="land-page">
@@ -93,12 +95,25 @@ function LandInner() {
 
             <div className="land-hero-actions">
               <div className="land-cta-row">
-                <Link href="/dashboard" className="run land-btn-main">
-                  Open the OS <span aria-hidden="true">→</span>
-                </Link>
-                <Link href="/workspaces" className="run land-btn-ghost">
-                  {workspaces.length > 0 ? "Switch workspace" : "Create workspace"}
-                </Link>
+                {user ? (
+                  <>
+                    <Link href="/dashboard" className="run land-btn-main">
+                      Open the OS <span aria-hidden="true">→</span>
+                    </Link>
+                    <Link href="/workspaces" className="run land-btn-ghost">
+                      Switch workspace
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <Link href="/signup" className="run land-btn-main">
+                      Get started — sign up free <span aria-hidden="true">→</span>
+                    </Link>
+                    <Link href="/login" className="run land-btn-ghost">
+                      Log in
+                    </Link>
+                  </>
+                )}
               </div>
               <p className="land-hero-meta">
                 Self-hosted on Next.js + FastAPI + SQLite · Mock-ready out of the box
@@ -331,8 +346,8 @@ function LandInner() {
                 minutes.
               </p>
             </div>
-            <Link href="/dashboard" className="land-closing-btn">
-              Open the OS <span aria-hidden="true">→</span>
+            <Link href={user ? "/dashboard" : "/signup"} className="land-closing-btn">
+              {user ? "Open the OS" : "Sign up free"} <span aria-hidden="true">→</span>
             </Link>
           </div>
         </section>
@@ -347,7 +362,9 @@ function LandInner() {
           <a href="#preview">Preview</a>
           <a href="#agents">Agents</a>
           <a href="#workflow">Workflow</a>
-          <Link href="/dashboard">Open the OS</Link>
+          <Link href={user ? "/dashboard" : "/signup"}>
+            {user ? "Open the OS" : "Sign up free"}
+          </Link>
         </div>
       </footer>
     </div>
