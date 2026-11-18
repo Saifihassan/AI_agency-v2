@@ -296,7 +296,7 @@ function LandInner() {
                 Full-stack local control. Built-in mock fallback.
               </h2>
               <p className="land-stack-p">
-                AI Agency OS v2 keeps client profiles, agent runs, and chat
+                AI Agency OS keeps client profiles, agent runs, and chat
                 history on your own infrastructure—combining a fast Next.js
                 workspace shell with FastAPI agent pipelines and SQLite storage.
                 When the backend is offline, every module seamlessly falls back
@@ -340,7 +340,7 @@ function LandInner() {
 
       <footer className="land-footer">
         <div className="land-footer-brand">
-          <strong>AI Agency OS v2</strong>
+          <strong>AI Agency OS</strong>
           <span>Full-stack marketing agency operating system</span>
         </div>
         <div className="land-footer-links">

@@ -9,7 +9,7 @@ const grotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "AI Agency OS v2",
+  title: "AI Agency OS",
   description:
     "Full-stack marketing agency operating system — agents for content, research, outreach and competitor analysis.",
 };
