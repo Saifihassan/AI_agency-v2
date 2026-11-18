@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import { useWorkspaces } from "./workspace";
 import { apiMode } from "@/lib/api";
 import {
@@ -27,6 +28,37 @@ const LINKS = [
   { href: "/competitor", label: "Competitor", icon: dataTransferDiagonal1 },
   { href: "/settings", label: "Settings", icon: settingsSliderDesktopHorizontal },
 ];
+
+function UserFooter() {
+  const router = useRouter();
+  const [email, setEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      const supabase = createClient();
+      supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
+    } catch {}
+  }, []);
+
+  if (!email) return null;
+  return (
+    <div className="user-foot">
+      <span className="user-email" title={email}>{email}</span>
+      <button
+        className="user-logout"
+        onClick={async () => {
+          try {
+            await createClient().auth.signOut();
+          } catch {}
+          router.replace("/login");
+          router.refresh();
+        }}
+      >
+        Log out
+      </button>
+    </div>
+  );
+}
 
 export default function Sidebar() {
   const path = usePathname();
@@ -139,6 +171,7 @@ export default function Sidebar() {
 
       <div className="sidebar-foot">
         <span className="api-status">{apiMode()}</span>
+        <UserFooter />
       </div>
     </>
   );

@@ -1,5 +1,6 @@
 import type { ModuleKind, ModuleResultMap, Workspace } from "./types";
 import { mockRun, mockProfile } from "./mock";
+import { authHeader } from "./supabase/authheader";
 
 const API_URL = (process.env.NEXT_PUBLIC_API_URL || "").trim().replace(/\/+$/, "");
 export { API_URL };
@@ -18,9 +19,10 @@ export async function runModule<K extends ModuleKind>(
 ): Promise<ModuleResultMap[K]> {
   if (API_URL) {
     try {
+      const auth = await authHeader();
       const res = await fetch(`${API_URL}/api/${kind}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...auth },
         body: JSON.stringify(payload),
       });
       if (res.ok) return (await res.json()) as ModuleResultMap[K];
@@ -38,9 +40,10 @@ export async function createWorkspace(
 ): Promise<Workspace> {
   if (API_URL) {
     try {
+      const auth = await authHeader();
       const res = await fetch(`${API_URL}/api/workspaces`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...auth },
         body: JSON.stringify(payload),
       });
       if (res.ok) return (await res.json()) as Workspace;
@@ -63,8 +66,10 @@ export async function createWorkspace(
 export async function deleteWorkspace(id: string): Promise<boolean> {
   if (API_URL) {
     try {
+      const auth = await authHeader();
       const res = await fetch(`${API_URL}/api/workspaces/${id}`, {
         method: "DELETE",
+        headers: auth,
       });
       return res.ok;
     } catch {

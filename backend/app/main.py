@@ -4,10 +4,11 @@ load_dotenv(override=True)
 
 import os
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
+from app.auth import get_current_user
 from app.mcp import make_obscura_server, attach_mcp, web_research_agents
 
 from app.database import (
@@ -114,9 +115,19 @@ def health():
     return {"status": "ok"}
 
 
+def owned_workspace(ws_id: str | None, user: dict):
+    """Verify a workspace exists and belongs to the caller (403 otherwise)."""
+    if not ws_id:
+        return None
+    ws = fetch_workspace(ws_id)
+    if ws and ws.get("user_id") and ws["user_id"] != user["id"]:
+        raise HTTPException(403, "Not your workspace")
+    return ws
+
+
 @app.post("/api/workspaces")
-async def create_workspace(req: CreateWorkspaceRequest):
-    ws_id = add_workspace(req.name, req.website, req.industry)
+async def create_workspace(req: CreateWorkspaceRequest, user: dict = Depends(get_current_user)):
+    ws_id = add_workspace(user["id"], req.name, req.website, req.industry)
     profile = await generate_company_profile(req.name, req.website, req.industry)
     profile_dict = profile.model_dump()
     profile_dict["website"] = req.website
@@ -127,16 +138,16 @@ async def create_workspace(req: CreateWorkspaceRequest):
 
 
 @app.get("/api/workspaces")
-def get_workspaces():
+def get_workspaces(user: dict = Depends(get_current_user)):
     workspaces = []
-    for ws in fetch_workspaces():
+    for ws in fetch_workspaces(user["id"]):
         workspaces.append({**ws, "profile": fetch_company_profile(ws["id"])})
     return workspaces
 
 
 @app.get("/api/workspaces/{ws_id}")
-def get_workspace(ws_id: str):
-    ws = fetch_workspace(ws_id)
+def get_workspace(ws_id: str, user: dict = Depends(get_current_user)):
+    ws = owned_workspace(ws_id, user)
     if not ws:
         raise HTTPException(404, "Workspace not found")
     profile = fetch_company_profile(ws_id)
@@ -147,37 +158,39 @@ def get_workspace(ws_id: str):
 
 
 @app.delete("/api/workspaces/{ws_id}")
-def remove_workspace(ws_id: str):
-    if not delete_workspace(ws_id):
+def remove_workspace(ws_id: str, user: dict = Depends(get_current_user)):
+    ws = owned_workspace(ws_id, user)
+    if not ws:
         raise HTTPException(404, "Workspace not found")
+    delete_workspace(ws_id)
     return {"ok": True}
 
 
 @app.post("/api/studio")
-async def studio(req: StudioChatRequest):
-    profile = None
-    if req.workspace_id:
-        profile = fetch_company_profile(req.workspace_id)
-        if not fetch_workspace(req.workspace_id):
-            profile = None
+async def studio(req: StudioChatRequest, user: dict = Depends(get_current_user)):
+    ws = owned_workspace(req.workspace_id, user)
+    profile = fetch_company_profile(req.workspace_id) if ws else None
     history = list(req.history or [])
-    if req.workspace_id:
+    if ws:
         if not history:
             history = fetch_chat_history(req.workspace_id)[: -1]  # exclude just-saved user msg
         save_chat_message(req.workspace_id, "user", req.message)
     result = await run_studio_chat(req.message, history, profile)
-    if req.workspace_id:
+    if ws:
         save_chat_message(req.workspace_id, "assistant", result.message, result.response_type)
     return result
 
 
 @app.get("/api/studio/{ws_id}/history")
-def studio_history(ws_id: str):
+def studio_history(ws_id: str, user: dict = Depends(get_current_user)):
+    if not owned_workspace(ws_id, user):
+        raise HTTPException(404, "Workspace not found")
     return fetch_chat_history(ws_id)
 
 
 @app.post("/api/research")
-async def research(req: ResearchRequest):
+async def research(req: ResearchRequest, user: dict = Depends(get_current_user)):
+    owned_workspace(req.workspace_id, user)
     result = await run_research(req.topic, req.depth)
     if req.workspace_id:
         save_generated(
@@ -194,7 +207,8 @@ async def research(req: ResearchRequest):
 
 
 @app.post("/api/news")
-async def market_news(req: NewsRequest):
+async def market_news(req: NewsRequest, user: dict = Depends(get_current_user)):
+    owned_workspace(req.workspace_id, user)
     report = await run_market_news_agent(req.workspace_id or "General", req.industry)
     if req.workspace_id:
         save_news(req.workspace_id, req.industry, report.model_dump())
@@ -202,7 +216,8 @@ async def market_news(req: NewsRequest):
 
 
 @app.post("/api/outreach")
-async def outreach(req: OutreachRequest):
+async def outreach(req: OutreachRequest, user: dict = Depends(get_current_user)):
+    owned_workspace(req.workspace_id, user)
     result = await run_outreach_agent(req.website, req.service, req.tone)
     if req.workspace_id:
         save_generated(
@@ -220,8 +235,9 @@ async def outreach(req: OutreachRequest):
 
 
 @app.post("/api/competitor")
-async def competitor(req: CompetitorRequest):
-    profile = fetch_company_profile(req.workspace_id) if req.workspace_id else None
+async def competitor(req: CompetitorRequest, user: dict = Depends(get_current_user)):
+    ws = owned_workspace(req.workspace_id, user)
+    profile = fetch_company_profile(req.workspace_id) if ws else None
     report = await run_competitor_agent(req.website, profile)
     if req.workspace_id:
         save_generated(

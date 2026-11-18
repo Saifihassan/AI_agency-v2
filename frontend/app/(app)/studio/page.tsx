@@ -5,6 +5,7 @@ import { apiMode, apiConnected, API_URL, runModule } from "@/lib/api";
 import type { ChatMessage } from "@/lib/types";
 import { Kicker, Reveal } from "@/components/ui";
 import { useWorkspaces } from "@/components/workspace";
+import { authHeader } from "@/lib/supabase/authheader";
 import { Streamline, pencil1 } from "@/components/icons";
 
 const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
@@ -25,7 +26,8 @@ export default function StudioPage() {
 
   useEffect(() => {
     if (!apiConnected() || !active) return;
-    fetch(`${API_URL}/api/studio/${active.id}/history`)
+    authHeader().then((auth) =>
+      fetch(`${API_URL}/api/studio/${active.id}/history`, { headers: auth })
       .then((r) => (r.ok ? r.json() : []))
       .then((rows: { role: string; content: string; response_type: string }[]) =>
         setMessages(
@@ -42,7 +44,7 @@ export default function StudioPage() {
           })),
         ),
       )
-      .catch(() => {});
+      .catch(() => {}));
   }, [active?.id]);
 
   useEffect(() => {

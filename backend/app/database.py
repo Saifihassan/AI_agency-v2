@@ -114,8 +114,13 @@ def init_database():
     """
     if IS_PG:
         _execute(con, script)
+        _execute(con, "ALTER TABLE workspaces ADD COLUMN IF NOT EXISTS user_id TEXT")
     else:
         con.executescript(script)
+        try:
+            con.execute("ALTER TABLE workspaces ADD COLUMN user_id TEXT")
+        except Exception:
+            pass
     _commit_close(con)
 
 
@@ -153,27 +158,33 @@ def ws_row_to_dict(row):
         "name": _val(row["name"]),
         "website": _val(row["website"]),
         "industry": _val(row["industry"]),
+        "user_id": _val(row["user_id"]) if row["user_id"] else None,
         "createdAt": _val(row["created_at"]),
     }
 
 
-def add_workspace(name: str, website: str, industry: str) -> str:
+def add_workspace(user_id: str, name: str, website: str, industry: str) -> str:
     con = get_connection()
     ws_id = str(uuid.uuid4())
     _execute(
         con,
-        "INSERT INTO workspaces (id, name, website, industry) VALUES (?, ?, ?, ?)",
-        (ws_id, name, website, industry),
+        "INSERT INTO workspaces (id, user_id, name, website, industry) VALUES (?, ?, ?, ?, ?)",
+        (ws_id, user_id, name, website, industry),
     )
     _commit_close(con)
     return ws_id
 
 
-def fetch_workspaces():
+def fetch_workspaces(user_id: str | None = None):
     con = get_connection()
-    rows = _execute(
-        con, "SELECT * FROM workspaces ORDER BY created_at DESC"
-    ).fetchall()
+    if user_id:
+        rows = _execute(
+            con,
+            "SELECT * FROM workspaces WHERE user_id = ? ORDER BY created_at DESC",
+            (user_id,),
+        ).fetchall()
+    else:
+        rows = _execute(con, "SELECT * FROM workspaces ORDER BY created_at DESC").fetchall()
     con.close()
     return [ws_row_to_dict(r) for r in rows]
 

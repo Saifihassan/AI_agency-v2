@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import type { Workspace, CompanyProfile } from "@/lib/types";
 import { API_URL, apiConnected } from "@/lib/api";
+import { authHeader } from "@/lib/supabase/authheader";
 
 type WorkspaceCtx = {
   workspaces: Workspace[];
@@ -55,14 +56,16 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!apiConnected()) return;
-    fetch(`${API_URL}/api/workspaces`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((list: Workspace[] | null) => {
-        if (!list) return;
-        setWorkspaces(list);
-        setActiveId(list[0]?.id ?? null);
-      })
-      .catch(() => {});
+    authHeader().then((auth) =>
+      fetch(`${API_URL}/api/workspaces`, { headers: auth })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((list: Workspace[] | null) => {
+          if (!list) return;
+          setWorkspaces(list);
+          setActiveId(list[0]?.id ?? null);
+        })
+        .catch(() => {}),
+    );
   }, []);
 
   const active =
