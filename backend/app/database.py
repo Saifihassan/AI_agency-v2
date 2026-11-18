@@ -1,35 +1,62 @@
-import sqlite3
 import os
 import json
 import uuid
 from datetime import datetime, timezone
 
-DB_PATH = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "agency.db"
-)
+DB_URL = (os.getenv("SUPABASE_DB_URL") or os.getenv("DATABASE_URL") or "").strip()
+IS_PG = bool(DB_URL)
+
+if IS_PG:
+    import psycopg2
+    import psycopg2.extras
+
+
+def _q(sql: str) -> str:
+    return sql.replace("?", "%s") if IS_PG else sql
 
 
 def get_connection():
-    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
+    if IS_PG:
+        return psycopg2.connect(DB_URL, sslmode="require")
+    import sqlite3
+
+    db_path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "agency.db"
+    )
+    os.makedirs(os.path.dirname(db_path), exist_ok=True)
+    conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     return conn
 
 
+def _execute(con, sql, params=()):
+    if IS_PG:
+        cur = con.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute(_q(sql), params)
+        return cur
+    return con.execute(sql, params)
+
+
+def _commit_close(con):
+    con.commit()
+    con.close()
+
+
 def init_database():
     con = get_connection()
-    con.executescript(
-        """
+    auto_pk = "BIGSERIAL PRIMARY KEY" if IS_PG else "INTEGER PRIMARY KEY AUTOINCREMENT"
+    ts = "TIMESTAMPTZ DEFAULT NOW()" if IS_PG else "TEXT DEFAULT CURRENT_TIMESTAMP"
+    script = f"""
         CREATE TABLE IF NOT EXISTS workspaces (
             id TEXT PRIMARY KEY,
             name TEXT NOT NULL,
             website TEXT,
             industry TEXT,
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            created_at {ts}
         );
 
         CREATE TABLE IF NOT EXISTS company_profile (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id {auto_pk},
             workspace_id TEXT,
             company_name TEXT,
             website TEXT,
@@ -41,59 +68,60 @@ def init_database():
             brand_voice TEXT,
             value_proposition TEXT,
             keywords TEXT,
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            created_at {ts}
         );
 
         CREATE TABLE IF NOT EXISTS research_reports (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id {auto_pk},
             workspace_id TEXT,
             report_data TEXT,
             depth TEXT,
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            created_at {ts}
         );
 
         CREATE TABLE IF NOT EXISTS competitors (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id {auto_pk},
             workspace_id TEXT,
             website TEXT,
             report_data TEXT,
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            created_at {ts}
         );
 
         CREATE TABLE IF NOT EXISTS market_news (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id {auto_pk},
             workspace_id TEXT,
             industry TEXT,
             report_data TEXT,
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            created_at {ts}
         );
 
         CREATE TABLE IF NOT EXISTS generated_content (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id {auto_pk},
             workspace_id TEXT,
             content_kind TEXT,
             payload TEXT,
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            created_at {ts}
         );
 
         CREATE TABLE IF NOT EXISTS chat_messages (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id {auto_pk},
             workspace_id TEXT,
             role TEXT,
             content TEXT,
             response_type TEXT,
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            created_at {ts}
         );
-        """
-    )
-    con.commit()
-    con.close()
+    """
+    if IS_PG:
+        _execute(con, script)
+    else:
+        con.executescript(script)
+    _commit_close(con)
 
 
 def delete_workspace(ws_id: str) -> bool:
     con = get_connection()
-    cur = con.execute("SELECT id FROM workspaces WHERE id = ?", (ws_id,))
-    if not cur.fetchone():
+    if not _execute(con, "SELECT id FROM workspaces WHERE id = ?", (ws_id,)).fetchone():
         con.close()
         return False
     for table in [
@@ -106,55 +134,61 @@ def delete_workspace(ws_id: str) -> bool:
         "chat_messages",
     ]:
         if table == "workspaces":
-            con.execute("DELETE FROM workspaces WHERE id = ?", (ws_id,))
+            _execute(con, "DELETE FROM workspaces WHERE id = ?", (ws_id,))
         else:
-            con.execute(
-                f"DELETE FROM {table} WHERE workspace_id = ?", (ws_id,)
-            )
-    con.commit()
-    con.close()
+            _execute(con, f"DELETE FROM {table} WHERE workspace_id = ?", (ws_id,))
+    _commit_close(con)
     return True
+
+
+def _val(v):
+    if isinstance(v, datetime):
+        return v.isoformat(timespec="seconds")
+    return v
 
 
 def ws_row_to_dict(row):
     return {
-        "id": row["id"],
-        "name": row["name"],
-        "website": row["website"],
-        "industry": row["industry"],
-        "createdAt": row["created_at"],
+        "id": _val(row["id"]),
+        "name": _val(row["name"]),
+        "website": _val(row["website"]),
+        "industry": _val(row["industry"]),
+        "createdAt": _val(row["created_at"]),
     }
 
 
 def add_workspace(name: str, website: str, industry: str) -> str:
     con = get_connection()
     ws_id = str(uuid.uuid4())
-    con.execute(
+    _execute(
+        con,
         "INSERT INTO workspaces (id, name, website, industry) VALUES (?, ?, ?, ?)",
         (ws_id, name, website, industry),
     )
-    con.commit()
-    con.close()
+    _commit_close(con)
     return ws_id
 
 
 def fetch_workspaces():
     con = get_connection()
-    rows = con.execute("SELECT * FROM workspaces ORDER BY created_at DESC").fetchall()
+    rows = _execute(
+        con, "SELECT * FROM workspaces ORDER BY created_at DESC"
+    ).fetchall()
     con.close()
     return [ws_row_to_dict(r) for r in rows]
 
 
 def fetch_workspace(ws_id: str):
     con = get_connection()
-    row = con.execute("SELECT * FROM workspaces WHERE id = ?", (ws_id,)).fetchone()
+    row = _execute(con, "SELECT * FROM workspaces WHERE id = ?", (ws_id,)).fetchone()
     con.close()
     return ws_row_to_dict(row) if row else None
 
 
 def insert_company_profile(ws_id: str, profile: dict):
     con = get_connection()
-    con.execute(
+    _execute(
+        con,
         """
         INSERT INTO company_profile (
             workspace_id, company_name, website, industry, company_summary,
@@ -176,13 +210,13 @@ def insert_company_profile(ws_id: str, profile: dict):
             json.dumps(profile.get("keywords") or []),
         ),
     )
-    con.commit()
-    con.close()
+    _commit_close(con)
 
 
 def fetch_company_profile(ws_id: str):
     con = get_connection()
-    row = con.execute(
+    row = _execute(
+        con,
         "SELECT * FROM company_profile WHERE workspace_id = ? ORDER BY created_at DESC LIMIT 1",
         (ws_id,),
     ).fetchone()
@@ -190,52 +224,53 @@ def fetch_company_profile(ws_id: str):
     if not row:
         return None
     return {
-        "company_name": row["company_name"],
-        "website": row["website"],
-        "industry": row["industry"],
-        "company_summary": row["company_summary"],
-        "description": row["description"],
+        "company_name": _val(row["company_name"]),
+        "website": _val(row["website"]),
+        "industry": _val(row["industry"]),
+        "company_summary": _val(row["company_summary"]),
+        "description": _val(row["description"]),
         "products_services": json.loads(row["products_services"] or "[]"),
-        "target_audience": row["target_audience"],
-        "brand_voice": row["brand_voice"],
-        "value_proposition": row["value_proposition"],
+        "target_audience": _val(row["target_audience"]),
+        "brand_voice": _val(row["brand_voice"]),
+        "value_proposition": _val(row["value_proposition"]),
         "keywords": json.loads(row["keywords"] or "[]"),
     }
 
 
 def save_generated(kind: str, ws_id: str, payload: dict):
     con = get_connection()
-    con.execute(
+    _execute(
+        con,
         "INSERT INTO generated_content (workspace_id, content_kind, payload) VALUES (?, ?, ?)",
         (ws_id, kind, json.dumps(payload, default=str)),
     )
-    con.commit()
-    con.close()
+    _commit_close(con)
 
 
 def save_news(ws_id: str, industry: str, report: dict):
     con = get_connection()
-    con.execute(
+    _execute(
+        con,
         "INSERT INTO market_news (workspace_id, industry, report_data) VALUES (?, ?, ?)",
         (ws_id, industry, json.dumps(report, default=str)),
     )
-    con.commit()
-    con.close()
+    _commit_close(con)
 
 
 def save_chat_message(ws_id: str, role: str, content: str, response_type: str = "chat"):
     con = get_connection()
-    con.execute(
+    _execute(
+        con,
         "INSERT INTO chat_messages (workspace_id, role, content, response_type) VALUES (?, ?, ?, ?)",
         (ws_id, role, content, response_type),
     )
-    con.commit()
-    con.close()
+    _commit_close(con)
 
 
 def fetch_chat_history(ws_id: str, limit: int = 40):
     con = get_connection()
-    rows = con.execute(
+    rows = _execute(
+        con,
         """
         SELECT role, content, response_type FROM chat_messages
         WHERE workspace_id = ? ORDER BY id DESC LIMIT ?
@@ -245,9 +280,9 @@ def fetch_chat_history(ws_id: str, limit: int = 40):
     con.close()
     return [
         {
-            "role": r["role"],
-            "content": r["content"],
-            "response_type": r["response_type"],
+            "role": _val(r["role"]),
+            "content": _val(r["content"]),
+            "response_type": _val(r["response_type"]),
         }
         for r in reversed(rows)
     ]

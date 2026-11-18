@@ -13,6 +13,7 @@ dependencies = [
     "firecrawl-py>=4.34.0",
     "requests>=2.32.0",
     "ddgs>=9.16.1",
+    "psycopg2-binary>=2.9.13",
 ]
 
 [[project.authors]]
