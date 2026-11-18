@@ -5,7 +5,7 @@ const API_URL = (process.env.NEXT_PUBLIC_API_URL || "").trim().replace(/\/+$/, "
 export { API_URL };
 
 export function apiMode(): string {
-  return API_URL ? "connected to " + API_URL : "mock mode — FastAPI not running";
+  return API_URL ? "connected" : "mock mode — FastAPI not running";
 }
 
 export function apiConnected(): boolean {
@@ -24,8 +24,9 @@ export async function runModule<K extends ModuleKind>(
         body: JSON.stringify(payload),
       });
       if (res.ok) return (await res.json()) as ModuleResultMap[K];
-    } catch {
-      // fall through to mock
+      console.warn(`[API] /api/${kind} returned status ${res.status}`);
+    } catch (err) {
+      console.warn(`[API] /api/${kind} request failed:`, err);
     }
   }
   return (await mockRun(kind, payload, [])) as ModuleResultMap[K];
@@ -43,8 +44,9 @@ export async function createWorkspace(
         body: JSON.stringify(payload),
       });
       if (res.ok) return (await res.json()) as Workspace;
-    } catch {
-      // fall through to mock
+      console.warn(`[API] /api/workspaces returned status ${res.status}`);
+    } catch (err) {
+      console.warn("[API] /api/workspaces request failed:", err);
     }
   }
   const profile = mockProfile(existing);

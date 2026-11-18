@@ -45,12 +45,17 @@ async def lifespan(app: FastAPI):
         yield
 
 
-_origins_env = os.getenv("FRONTEND_ORIGINS") or os.getenv("FRONTEND_URL", "")
-ALLOWED_ORIGINS = [
+DEFAULT_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+_configured_origins = [
     o.strip().rstrip("/")
-    for o in _origins_env.split(",")
+    for o in (os.getenv("FRONTEND_ORIGINS") or os.getenv("FRONTEND_URL", "")).split(",")
     if o.strip()
-] or ["http://localhost:3000", "http://127.0.0.1:3000"]
+]
+ALLOWED_ORIGINS = list(dict.fromkeys(DEFAULT_ORIGINS + _configured_origins))
+ALLOWED_ORIGIN_REGEX = os.getenv("FRONTEND_ORIGIN_REGEX", r"^https://.*\.vercel\.app$").strip() or None
 IS_DEBUG = os.getenv("BACKEND_DEBUG", "0") == "1"
 
 fastapi_kwargs = dict(title="AI Agency OS Backend", version="2.0.0", lifespan=lifespan)
@@ -62,15 +67,11 @@ app = FastAPI(**fastapi_kwargs)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
+    allow_origin_regex=ALLOWED_ORIGIN_REGEX,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-try:
-    init_database()
-except Exception as e:
-    print(f"WARNING: database init skipped (read-only filesystem?): {e}")
 
 
 class CreateWorkspaceRequest(BaseModel):
