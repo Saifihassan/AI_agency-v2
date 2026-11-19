@@ -12,6 +12,7 @@ from app.auth import get_current_user
 from app.mcp import make_obscura_server, attach_mcp, web_research_agents
 
 from app.database import (
+    IS_PG,
     init_database,
     add_workspace,
     fetch_workspaces,
@@ -114,7 +115,7 @@ class CompetitorRequest(BaseModel):
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok"}
+    return {"status": "ok", "db": "postgres" if IS_PG else "sqlite"}
 
 
 @app.get("/api/usage")
