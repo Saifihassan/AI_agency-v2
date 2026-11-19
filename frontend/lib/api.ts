@@ -13,6 +13,47 @@ export function apiConnected(): boolean {
   return Boolean(API_URL);
 }
 
+export type UsageLimitDetail = {
+  code: "usage_limit";
+  module: string;
+  limit: number;
+  used: number;
+  window_hours: number;
+  reset_at: string | null;
+};
+
+export class UsageLimitError extends Error {
+  detail: UsageLimitDetail;
+  constructor(detail: UsageLimitDetail) {
+    super(`Usage limit reached for ${detail.module}`);
+    this.name = "UsageLimitError";
+    this.detail = detail;
+  }
+}
+
+function notifyUsageLimit(detail: UsageLimitDetail) {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("agencyos:usage-limit", { detail }));
+  }
+}
+
+function notifyUsageChanged() {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("agencyos:usage-changed"));
+  }
+}
+
+async function handleLimited(res: Response): Promise<never | null> {
+  if (res.status !== 429) return null;
+  const body = await res.json().catch(() => null);
+  const detail = (body?.detail ?? body) as UsageLimitDetail | null;
+  if (detail?.code === "usage_limit") {
+    notifyUsageLimit(detail);
+    throw new UsageLimitError(detail);
+  }
+  return null;
+}
+
 export async function runModule<K extends ModuleKind>(
   kind: K,
   payload: Record<string, unknown>,
@@ -25,9 +66,15 @@ export async function runModule<K extends ModuleKind>(
         headers: { "Content-Type": "application/json", ...auth },
         body: JSON.stringify(payload),
       });
-      if (res.ok) return (await res.json()) as ModuleResultMap[K];
+      await handleLimited(res);
+      if (res.ok) {
+        const data = (await res.json()) as ModuleResultMap[K];
+        notifyUsageChanged();
+        return data;
+      }
       console.warn(`[API] /api/${kind} returned status ${res.status}`);
     } catch (err) {
+      if (err instanceof UsageLimitError) throw err;
       console.warn(`[API] /api/${kind} request failed:`, err);
     }
   }
@@ -46,9 +93,15 @@ export async function createWorkspace(
         headers: { "Content-Type": "application/json", ...auth },
         body: JSON.stringify(payload),
       });
-      if (res.ok) return (await res.json()) as Workspace;
+      await handleLimited(res);
+      if (res.ok) {
+        const data = (await res.json()) as Workspace;
+        notifyUsageChanged();
+        return data;
+      }
       console.warn(`[API] /api/workspaces returned status ${res.status}`);
     } catch (err) {
+      if (err instanceof UsageLimitError) throw err;
       console.warn("[API] /api/workspaces request failed:", err);
     }
   }

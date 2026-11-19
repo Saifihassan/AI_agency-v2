@@ -23,6 +23,8 @@ from app.database import (
     save_news,
     save_chat_message,
     fetch_chat_history,
+    record_usage,
+    usage_status,
 )
 from app.agents.profile import generate_company_profile
 from app.agents.studio import run_studio_chat
@@ -115,6 +117,42 @@ def health():
     return {"status": "ok"}
 
 
+@app.get("/api/usage")
+def usage(user: dict = Depends(get_current_user)):
+    return {
+        "limit": MODULE_LIMIT,
+        "window_hours": MODULE_WINDOW_HOURS,
+        "modules": {
+            m: usage_status(user["id"], m, MODULE_LIMIT, MODULE_WINDOW_HOURS)
+            for m in MODULES
+        },
+    }
+
+
+MODULE_LIMIT = int(os.getenv("MODULE_DAILY_LIMIT", "3"))
+MODULE_WINDOW_HOURS = int(os.getenv("MODULE_LIMIT_WINDOW_HOURS", "24"))
+MODULES = ["research", "news", "outreach", "competitor", "studio", "workspace"]
+
+
+def enforce_usage(user: dict, module: str) -> dict:
+    """Rolling-window per-module quota. Raises 429 with structured detail."""
+    status = usage_status(user["id"], module, MODULE_LIMIT, MODULE_WINDOW_HOURS)
+    if status["used"] >= MODULE_LIMIT:
+        raise HTTPException(
+            status_code=429,
+            detail={
+                "code": "usage_limit",
+                "module": module,
+                "limit": MODULE_LIMIT,
+                "used": status["used"],
+                "window_hours": MODULE_WINDOW_HOURS,
+                "reset_at": status["reset_at"],
+            },
+        )
+    record_usage(user["id"], module)
+    return status
+
+
 def owned_workspace(ws_id: str | None, user: dict):
     """Verify a workspace exists and belongs to the caller (403 otherwise)."""
     if not ws_id:
@@ -127,6 +165,7 @@ def owned_workspace(ws_id: str | None, user: dict):
 
 @app.post("/api/workspaces")
 async def create_workspace(req: CreateWorkspaceRequest, user: dict = Depends(get_current_user)):
+    enforce_usage(user, "workspace")
     ws_id = add_workspace(user["id"], req.name, req.website, req.industry)
     profile = await generate_company_profile(req.name, req.website, req.industry)
     profile_dict = profile.model_dump()
@@ -168,6 +207,7 @@ def remove_workspace(ws_id: str, user: dict = Depends(get_current_user)):
 
 @app.post("/api/studio")
 async def studio(req: StudioChatRequest, user: dict = Depends(get_current_user)):
+    enforce_usage(user, "studio")
     ws = owned_workspace(req.workspace_id, user)
     profile = fetch_company_profile(req.workspace_id) if ws else None
     history = list(req.history or [])
@@ -190,6 +230,7 @@ def studio_history(ws_id: str, user: dict = Depends(get_current_user)):
 
 @app.post("/api/research")
 async def research(req: ResearchRequest, user: dict = Depends(get_current_user)):
+    enforce_usage(user, "research")
     owned_workspace(req.workspace_id, user)
     result = await run_research(req.topic, req.depth)
     if req.workspace_id:
@@ -208,6 +249,7 @@ async def research(req: ResearchRequest, user: dict = Depends(get_current_user))
 
 @app.post("/api/news")
 async def market_news(req: NewsRequest, user: dict = Depends(get_current_user)):
+    enforce_usage(user, "news")
     owned_workspace(req.workspace_id, user)
     report = await run_market_news_agent(req.workspace_id or "General", req.industry)
     if req.workspace_id:
@@ -217,6 +259,7 @@ async def market_news(req: NewsRequest, user: dict = Depends(get_current_user)):
 
 @app.post("/api/outreach")
 async def outreach(req: OutreachRequest, user: dict = Depends(get_current_user)):
+    enforce_usage(user, "outreach")
     owned_workspace(req.workspace_id, user)
     result = await run_outreach_agent(req.website, req.service, req.tone)
     if req.workspace_id:
@@ -236,6 +279,7 @@ async def outreach(req: OutreachRequest, user: dict = Depends(get_current_user))
 
 @app.post("/api/competitor")
 async def competitor(req: CompetitorRequest, user: dict = Depends(get_current_user)):
+    enforce_usage(user, "competitor")
     ws = owned_workspace(req.workspace_id, user)
     profile = fetch_company_profile(req.workspace_id) if ws else None
     report = await run_competitor_agent(req.website, profile)

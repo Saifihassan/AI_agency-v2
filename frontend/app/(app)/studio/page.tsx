@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { apiMode, apiConnected, API_URL, runModule } from "@/lib/api";
+import { apiMode, apiConnected, API_URL, runModule, UsageLimitError } from "@/lib/api";
 import type { ChatMessage } from "@/lib/types";
 import { Kicker, Reveal } from "@/components/ui";
 import { useWorkspaces } from "@/components/workspace";
@@ -82,7 +82,11 @@ export default function StudioPage() {
           response_type: res.response_type,
         },
       ]);
-    } catch {
+    } catch (err) {
+      if (err instanceof UsageLimitError) {
+        setMessages((prev) => prev.filter((m) => m.id !== pendingId));
+        return;
+      }
       setMessages((prev) => [
         ...prev.filter((m) => m.id !== pendingId),
         { id: uid(), role: "assistant", content: "Run failed. Try again.", response_type: "error" },

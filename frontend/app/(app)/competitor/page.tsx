@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { apiMode, runModule } from "@/lib/api";
+import { apiMode, runModule, UsageLimitError } from "@/lib/api";
 import { saveRun, loadRun, formatSaved } from "@/lib/cache";
 import type { CompetitiveAnalysis } from "@/lib/types";
 import { Empty, Kicker, Panel, BaseItems, RunBar, Reveal, SectionLabel } from "@/components/ui";
@@ -41,8 +41,9 @@ export default function CompetitorPage() {
       saveRun("competitor", res);
       setTab("Snapshot");
       bumpUsage("Competitor");
-    } catch {
-      setError("Run failed. Check the API and try again.");
+    } catch (err) {
+      if (!(err instanceof UsageLimitError))
+              setError("Run failed. Check the API and try again.");
     }
     setRunning(false);
   };

@@ -1,7 +1,7 @@
 import os
 import json
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 DB_URL = (os.getenv("SUPABASE_DB_URL") or os.getenv("DATABASE_URL") or "").strip()
 IS_PG = bool(DB_URL)
@@ -109,6 +109,13 @@ def init_database():
             role TEXT,
             content TEXT,
             response_type TEXT,
+            created_at {ts}
+        );
+
+        CREATE TABLE IF NOT EXISTS usage_events (
+            id {auto_pk},
+            user_id TEXT,
+            module TEXT,
             created_at {ts}
         );
     """
@@ -301,3 +308,71 @@ def fetch_chat_history(ws_id: str, limit: int = 40):
 
 def now_iso():
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+# ---------- usage accounting (rolling window, per user per module) ----------
+
+def _window_cutoff(hours: int):
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
+    if IS_PG:
+        return cutoff
+    return cutoff.strftime("%Y-%m-%d %H:%M:%S")
+
+
+def count_usage(user_id: str, module: str, window_hours: int = 24) -> int:
+    con = get_connection()
+    row = _execute(
+        con,
+        "SELECT COUNT(*) AS n FROM usage_events WHERE user_id = ? AND module = ? AND created_at >= ?",
+        (user_id, module, _window_cutoff(window_hours)),
+    ).fetchone()
+    con.close()
+    if row is None:
+        return 0
+    return int(row["n"])
+
+
+def record_usage(user_id: str, module: str):
+    con = get_connection()
+    _execute(
+        con,
+        "INSERT INTO usage_events (user_id, module) VALUES (?, ?)",
+        (user_id, module),
+    )
+    _execute(
+        con,
+        "DELETE FROM usage_events WHERE created_at < ?",
+        (_window_cutoff(24 * 30),),
+    )
+    _commit_close(con)
+
+
+def _value(v):
+    if isinstance(v, datetime):
+        return v
+    if isinstance(v, str):
+        try:
+            return datetime.fromisoformat(v.replace("Z", "+00:00"))
+        except ValueError:
+            try:
+                return datetime.strptime(v, "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+            except ValueError:
+                return None
+    return None
+
+
+def usage_status(user_id: str, module: str, limit: int, window_hours: int = 24) -> dict:
+    con = get_connection()
+    rows = _execute(
+        con,
+        "SELECT created_at FROM usage_events WHERE user_id = ? AND module = ? AND created_at >= ? ORDER BY created_at ASC",
+        (user_id, module, _window_cutoff(window_hours)),
+    ).fetchall()
+    con.close()
+    used = len(rows)
+    reset_at = None
+    if used >= limit and rows:
+        oldest = _value(rows[used - limit]["created_at"])
+        if oldest:
+            reset_at = (oldest + timedelta(hours=window_hours)).isoformat(timespec="seconds")
+    return {"module": module, "used": used, "limit": limit, "remaining": max(0, limit - used), "reset_at": reset_at}

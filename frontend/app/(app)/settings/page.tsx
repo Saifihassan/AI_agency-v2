@@ -2,12 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { API_URL } from "@/lib/api";
+import { authHeader } from "@/lib/supabase/authheader";
 import { Kicker, Reveal } from "@/components/ui";
 
 export default function SettingsPage() {
   const [apiUp, setApiUp] = useState<boolean | null>(null);
   const [savedCount, setSavedCount] = useState(0);
   const [cleared, setCleared] = useState(false);
+  const [usage, setUsage] = useState<{
+    limit: number;
+    window_hours: number;
+    modules: Record<string, { used: number; limit: number; remaining: number; reset_at: string | null }>;
+  } | null>(null);
 
   useEffect(() => {
     if (!API_URL) {
@@ -24,6 +30,13 @@ export default function SettingsPage() {
       }
       setSavedCount(n);
     } catch {}
+    if (API_URL) {
+      authHeader()
+        .then((auth) => fetch(`${API_URL}/api/usage`, { headers: auth }))
+        .then((r) => (r.ok ? r.json() : null))
+        .then((u) => u && setUsage(u))
+        .catch(() => {});
+    }
   }, []);
 
   const clearSaved = () => {
@@ -77,6 +90,34 @@ export default function SettingsPage() {
       </Reveal>
 
       <Reveal i={2}>
+        <div className="panel" style={{ marginTop: "var(--space-3)" }} id="api-keys">
+          <h3 className="panel-title" style={{ margin: 0 }}>Your own API keys</h3>
+          <p style={{ color: "var(--sub)", fontSize: 13.5, margin: "8px 0 0" }}>
+            Bring-your-own-key is coming next. Until then the shared engine
+            gives every account {usage?.limit ?? 3} runs per module every{" "}
+            {usage?.window_hours ?? 24} hours, refilling automatically.
+          </p>
+          {usage && (
+            <dl className="kv" style={{ marginTop: 14 }}>
+              {Object.entries(usage.modules).map(([mod, u]) => (
+                <div key={mod} style={{ display: "contents" }}>
+                  <dt style={{ textTransform: "capitalize" }}>{mod}</dt>
+                  <dd>
+                    <span className={`status ${u.remaining > 0 ? "ok" : "idle"}`} style={{ display: "inline-block" }}>
+                      {u.used} / {u.limit} used
+                    </span>
+                    {u.remaining === 0 && u.reset_at
+                      ? ` · refills ${new Date(u.reset_at).toLocaleString()}`
+                      : ""}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          )}
+        </div>
+      </Reveal>
+
+      <Reveal i={3}>
         <div className="panel" style={{ marginTop: "var(--space-3)" }}>
           <h3 className="panel-title" style={{ margin: 0 }}>Wipe local cache</h3>
           <p style={{ color: "var(--sub)", fontSize: 13.5, margin: "8px 0 0" }}>

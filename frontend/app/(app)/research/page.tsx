@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { apiMode, runModule } from "@/lib/api";
+import { apiMode, runModule, UsageLimitError } from "@/lib/api";
 import { saveRun, loadRun, saveHistory, loadHistory, formatSaved } from "@/lib/cache";
 import type { ResearchAnalysis, StrategyReport, Source } from "@/lib/types";
 import { Empty, Kicker, Panel, RunBar, Reveal, SectionLabel } from "@/components/ui";
@@ -59,8 +59,9 @@ export default function ResearchPage() {
       setHistory(loadHistory<Result>("research"));
       setTab("Executive summary");
       bumpUsage("Research");
-    } catch {
-      setError("Run failed. Check the API and try again.");
+    } catch (err) {
+      if (!(err instanceof UsageLimitError))
+              setError("Run failed. Check the API and try again.");
     }
     setRunning(false);
   };

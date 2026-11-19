@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useWorkspaces } from "./workspace";
+import { useUsage } from "./usage";
 import { apiMode } from "@/lib/api";
 import {
   Streamline,
@@ -21,11 +22,11 @@ import {
 const LINKS = [
   { href: "/profile", label: "Profile", icon: businessCard1 },
   { href: "/dashboard", label: "Dashboard", icon: layoutDashboard1 },
-  { href: "/studio", label: "Content Studio", icon: pencil1 },
-  { href: "/research", label: "Research", icon: networkSearch },
-  { href: "/news", label: "Market News", icon: newspaperFold },
-  { href: "/outreach", label: "Outreach", icon: sendEmailFly },
-  { href: "/competitor", label: "Competitor", icon: dataTransferDiagonal1 },
+  { href: "/studio", label: "Content Studio", icon: pencil1, module: "studio" },
+  { href: "/research", label: "Research", icon: networkSearch, module: "research" },
+  { href: "/news", label: "Market News", icon: newspaperFold, module: "news" },
+  { href: "/outreach", label: "Outreach", icon: sendEmailFly, module: "outreach" },
+  { href: "/competitor", label: "Competitor", icon: dataTransferDiagonal1, module: "competitor" },
   { href: "/settings", label: "Settings", icon: settingsSliderDesktopHorizontal },
 ];
 
@@ -63,6 +64,7 @@ function UserFooter() {
 export default function Sidebar() {
   const path = usePathname();
   const { active, workspaces, setActive } = useWorkspaces();
+  const { ready, modules, windowHours } = useUsage();
   const [open, setOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [origin, setOrigin] = useState({ x: 39, y: 39 });
@@ -165,6 +167,18 @@ export default function Sidebar() {
           >
             <Streamline icon={l.icon} />
             {l.label}
+            {l.module && ready && (
+              <span
+                className={`usage-badge ${modules[l.module]?.remaining === 0 ? "usage-empty" : ""}`}
+                title={
+                  modules[l.module]
+                    ? `${modules[l.module].remaining} of ${modules[l.module].limit} runs left — refills every ${windowHours}h`
+                    : `${l.label} usage`
+                }
+              >
+                {modules[l.module] ? `${modules[l.module].remaining}/${modules[l.module].limit}` : "—"}
+              </span>
+            )}
           </Link>
         ))}
       </nav>
