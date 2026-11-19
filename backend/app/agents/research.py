@@ -4,21 +4,24 @@ from app.client import velona
 from app.tools import searxng_search, duckduckgo_search, tavily_search, crawl4ai_scrape, firecrawl_scrape
 from app.agents.prompts import RESEARCH_ANALYST, STRATEGY_ADVISOR
 
-research_analyst = Agent(
-    name="research_analyst",
-    instructions=RESEARCH_ANALYST,
-    output_type=ResearchAnalysis,
-    model=velona,
-    tools=[searxng_search, duckduckgo_search, tavily_search],
-)
-
-strategy_advisor = Agent(
-    name="strategy_advisor",
-    instructions=STRATEGY_ADVISOR,
-    output_type=StrategyReport,
-    model=velona,
-    tools=[crawl4ai_scrape, firecrawl_scrape],
-)
+def _build_agents(model=None):
+    m = model or velona
+    return (
+        Agent(
+            name="research_analyst",
+            instructions=RESEARCH_ANALYST,
+            output_type=ResearchAnalysis,
+            model=m,
+            tools=[searxng_search, duckduckgo_search, tavily_search],
+        ),
+        Agent(
+            name="strategy_advisor",
+            instructions=STRATEGY_ADVISOR,
+            output_type=StrategyReport,
+            model=m,
+            tools=[crawl4ai_scrape, firecrawl_scrape],
+        ),
+    )
 
 DEPTH_ALIASES = {
     "quick": "quick",
@@ -69,7 +72,8 @@ def depth_directive(depth: str) -> str:
     return spec + f' The requested depth keyword is "{DEPTH_LABELS[depth]}".'
 
 
-async def run_research(input: str, research_depth: str) -> dict:
+async def run_research(input: str, research_depth: str, model=None) -> dict:
+    research_analyst, strategy_advisor = _build_agents(model)
     depth = normalize_depth(research_depth)
     with trace("research_flow"):
         query = f"Topic: {input}\n{depth_directive(depth)}"

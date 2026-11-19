@@ -7,6 +7,7 @@ import { Kicker, Reveal } from "@/components/ui";
 import { useWorkspaces } from "@/components/workspace";
 import { authHeader } from "@/lib/supabase/authheader";
 import { Streamline, pencil1 } from "@/components/icons";
+import { ModelPicker } from "@/components/modelpicker";
 
 const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
 
@@ -89,7 +90,13 @@ export default function StudioPage() {
       }
       setMessages((prev) => [
         ...prev.filter((m) => m.id !== pendingId),
-        { id: uid(), role: "assistant", content: "Run failed. Try again.", response_type: "error" },
+        {
+          id: uid(),
+          role: "assistant",
+          content:
+            err instanceof Error ? `Run failed — ${err.message}` : "Run failed. Try again.",
+          response_type: "error",
+        },
       ]);
     } finally {
       setRunning(false);
@@ -132,11 +139,14 @@ export default function StudioPage() {
               <Streamline icon={pencil1} size={13} /> Studio session
               {active ? ` — ${active.name}` : ""}
             </span>
-            {messages.length > 0 && (
-              <button className="link-btn" onClick={() => setMessages([])}>
-                Clear session
-              </button>
-            )}
+            <div className="chat-top-right">
+              <ModelPicker module="studio" />
+              {messages.length > 0 && (
+                <button className="link-btn" onClick={() => setMessages([])}>
+                  Clear session
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="chat-log" ref={logRef}>

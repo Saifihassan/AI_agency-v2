@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
+import { ModelPicker } from "./modelpicker";
 
 export function Reveal({
   children,
@@ -91,13 +92,24 @@ export function BaseItems({ items }: { items: string[] }) {
   );
 }
 
-export function RunBar({ running, mode }: { running: boolean; mode: string }) {
+export function RunBar({
+  running,
+  mode,
+  module,
+}: {
+  running: boolean;
+  mode: string;
+  module?: string;
+}) {
   return (
     <div className="runbar">
       <span className={running ? "status running" : "status idle"}>
         {running ? "agents working" : "idle"}
       </span>
-      <span className="mode">{mode}</span>
+      <div className="runbar-right">
+        {module && <ModelPicker module={module} />}
+        <span className="mode">{mode}</span>
+      </div>
     </div>
   );
 }

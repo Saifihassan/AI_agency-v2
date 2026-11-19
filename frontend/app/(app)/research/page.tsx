@@ -61,7 +61,9 @@ export default function ResearchPage() {
       bumpUsage("Research");
     } catch (err) {
       if (!(err instanceof UsageLimitError))
-              setError("Run failed. Check the API and try again.");
+        setError(
+          err instanceof Error ? `Run failed — ${err.message}` : "Run failed. Check the API and try again."
+        );
     }
     setRunning(false);
   };
@@ -108,7 +110,7 @@ export default function ResearchPage() {
           <button className="run" disabled={running || !topic.trim()}>
             {running ? "Running…" : "Run research"}
           </button>
-          <RunBar running={running} mode={apiMode()} />
+          <RunBar running={running} mode={apiMode()} module="research" />
           {error && <div className="error-note" style={{ marginTop: 10 }}>{error}</div>}
         </form>
       </Panel>

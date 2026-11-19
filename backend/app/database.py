@@ -118,6 +118,18 @@ def init_database():
             module TEXT,
             created_at {ts}
         );
+
+        CREATE TABLE IF NOT EXISTS providers (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            label TEXT,
+            base_url TEXT NOT NULL,
+            api_key TEXT NOT NULL,
+            models TEXT,
+            model_map TEXT,
+            is_active INTEGER DEFAULT 0,
+            updated_at {ts}
+        );
     """
     if IS_PG:
         _execute(con, script)
@@ -129,6 +141,7 @@ def init_database():
         except Exception:
             pass
     _commit_close(con)
+    _migrate_legacy_providers()
 
 
 def delete_workspace(ws_id: str) -> bool:
@@ -308,6 +321,182 @@ def fetch_chat_history(ws_id: str, limit: int = 40):
 
 def now_iso():
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+# ---------- bring-your-own-key provider config ----------
+
+def _provider_row(row) -> dict:
+    data = dict(row)
+    try:
+        data["models"] = json.loads(data.get("models") or "[]")
+    except (TypeError, ValueError):
+        data["models"] = []
+    try:
+        data["model_map"] = json.loads(data.get("model_map") or "{}")
+    except (TypeError, ValueError):
+        data["model_map"] = {}
+    data["is_active"] = bool(data.get("is_active"))
+    return data
+
+
+def list_providers(user_id: str) -> list[dict]:
+    con = get_connection()
+    rows = _execute(
+        con,
+        "SELECT id, user_id, label, base_url, api_key, models, model_map, is_active "
+        "FROM providers WHERE user_id = ? ORDER BY is_active DESC, updated_at ASC",
+        (user_id,),
+    ).fetchall()
+    con.close()
+    return [_provider_row(r) for r in rows]
+
+
+def get_active_provider(user_id: str) -> dict | None:
+    con = get_connection()
+    row = _execute(
+        con,
+        "SELECT id, user_id, label, base_url, api_key, models, model_map, is_active "
+        "FROM providers WHERE user_id = ? AND is_active = 1 LIMIT 1",
+        (user_id,),
+    ).fetchone()
+    con.close()
+    return _provider_row(row) if row is not None else None
+
+
+def add_provider(user_id: str, label: str, base_url: str, encrypted_key: str, models: list[str]) -> dict:
+    provider_id = str(uuid.uuid4())
+    has_active = get_active_provider(user_id) is not None
+    con = get_connection()
+    _execute(
+        con,
+        "INSERT INTO providers (id, user_id, label, base_url, api_key, models, model_map, is_active) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        (
+            provider_id,
+            user_id,
+            label,
+            base_url,
+            encrypted_key,
+            json.dumps(models),
+            json.dumps({}),
+            0 if has_active else 1,
+        ),
+    )
+    _commit_close(con)
+    con = get_connection()
+    row = _execute(
+        con,
+        "SELECT id, user_id, label, base_url, api_key, models, model_map, is_active "
+        "FROM providers WHERE id = ?",
+        (provider_id,),
+    ).fetchone()
+    con.close()
+    return _provider_row(row)
+
+
+def activate_provider(user_id: str, provider_id: str) -> bool:
+    con = get_connection()
+    owned = _execute(
+        con, "SELECT id FROM providers WHERE id = ? AND user_id = ?", (provider_id, user_id)
+    ).fetchone()
+    if owned is None:
+        con.close()
+        return False
+    _execute(con, "UPDATE providers SET is_active = 0 WHERE user_id = ?", (user_id,))
+    _execute(con, "UPDATE providers SET is_active = 1 WHERE id = ?", (provider_id,))
+    _commit_close(con)
+    return True
+
+
+def update_provider_model(user_id: str, module: str, model: str, provider_id: str | None = None) -> bool:
+    provider = None
+    if provider_id:
+        for candidate in list_providers(user_id):
+            if candidate["id"] == provider_id:
+                provider = candidate
+                break
+    else:
+        provider = get_active_provider(user_id)
+    if provider is None:
+        return False
+    model_map = provider["model_map"] or {}
+    if model:
+        model_map[module] = model
+    else:
+        model_map.pop(module, None)
+    con = get_connection()
+    _execute(
+        con,
+        "UPDATE providers SET model_map = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+        (json.dumps(model_map), provider["id"]),
+    )
+    _commit_close(con)
+    return True
+
+
+def delete_provider(user_id: str, provider_id: str) -> bool:
+    con = get_connection()
+    row = _execute(
+        con, "SELECT is_active FROM providers WHERE id = ? AND user_id = ?", (provider_id, user_id)
+    ).fetchone()
+    if row is None:
+        con.close()
+        return False
+    was_active = bool(dict(row).get("is_active"))
+    _execute(con, "DELETE FROM providers WHERE id = ?", (provider_id,))
+    _commit_close(con)
+    if was_active:
+        remaining = list_providers(user_id)
+        if remaining:
+            activate_provider(user_id, remaining[0]["id"])
+    return True
+
+
+def _migrate_legacy_providers():
+    """Move rows from the old single-provider table into `providers`."""
+    con = get_connection()
+    try:
+        if IS_PG:
+            exists = _execute(
+                con,
+                "SELECT 1 AS ok FROM information_schema.tables WHERE table_name = 'user_providers'",
+            ).fetchone()
+        else:
+            exists = _execute(
+                con, "SELECT 1 AS ok FROM sqlite_master WHERE type = 'table' AND name = 'user_providers'"
+            ).fetchone()
+        if exists is None:
+            con.close()
+            return
+        rows = _execute(
+            con,
+            "SELECT user_id, base_url, api_key, models, model_map FROM user_providers",
+        ).fetchall()
+        for row in rows:
+            data = dict(row)
+            _execute(
+                con,
+                "INSERT INTO providers (id, user_id, label, base_url, api_key, models, model_map, is_active) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, 1)",
+                (
+                    str(uuid.uuid4()),
+                    data["user_id"],
+                    "Migrated provider",
+                    data["base_url"],
+                    data["api_key"],
+                    data.get("models") or "[]",
+                    data.get("model_map") or "{}",
+                ),
+            )
+        _execute(con, "DROP TABLE user_providers")
+        con.commit()
+    except Exception:
+        pass
+    finally:
+        try:
+            con.close()
+        except Exception:
+            pass
 
 
 # ---------- usage accounting (rolling window, per user per module) ----------

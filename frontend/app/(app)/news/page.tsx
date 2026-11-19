@@ -46,7 +46,9 @@ export default function NewsPage() {
       bumpUsage("Market News");
     } catch (err) {
       if (!(err instanceof UsageLimitError))
-              setError("Run failed. Check the API and try again.");
+        setError(
+          err instanceof Error ? `Run failed — ${err.message}` : "Run failed. Check the API and try again."
+        );
     }
     setRunning(false);
   };
@@ -85,7 +87,7 @@ export default function NewsPage() {
           <button className="run" disabled={running}>
             {running ? "Running…" : "Generate intelligence report"}
           </button>
-          <RunBar running={running} mode={apiMode()} />
+          <RunBar running={running} mode={apiMode()} module="news" />
           {error && <div className="error-note" style={{ marginTop: 10 }}>{error}</div>}
         </form>
       </Panel>

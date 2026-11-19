@@ -7,23 +7,29 @@ from app.agents.prompts import (
     OUTREACH_GENERATOR_INSTRUCTIONS,
 )
 
-prospect_analyzer = Agent(
-    name="prospect_analyzer",
-    instructions=PROSPECT_ANALYZER_INSTRUCTIONS,
-    model=velona,
-    output_type=ProspectAnalysis,
-    tools=[searxng_search, duckduckgo_search, tavily_search, crawl4ai_scrape, firecrawl_scrape],
-)
+def _build_agents(model=None):
+    m = model or velona
+    return (
+        Agent(
+            name="prospect_analyzer",
+            instructions=PROSPECT_ANALYZER_INSTRUCTIONS,
+            model=m,
+            output_type=ProspectAnalysis,
+            tools=[searxng_search, duckduckgo_search, tavily_search, crawl4ai_scrape, firecrawl_scrape],
+        ),
+        Agent(
+            name="outreach_generator",
+            instructions=OUTREACH_GENERATOR_INSTRUCTIONS,
+            model=m,
+            output_type=OutreachSequence,
+        ),
+    )
 
-outreach_generator = Agent(
-    name="outreach_generator",
-    instructions=OUTREACH_GENERATOR_INSTRUCTIONS,
-    model=velona,
-    output_type=OutreachSequence,
-)
 
-
-async def run_outreach_agent(website: str, service: str, outreach_tone: str = "Direct") -> dict:
+async def run_outreach_agent(
+    website: str, service: str, outreach_tone: str = "Direct", model=None
+) -> dict:
+    prospect_analyzer, outreach_generator = _build_agents(model)
     with trace("outreach_sequence"):
         prompt = f"Website: {website}\nService Offered: {service}\nOutreach Tone: {outreach_tone}"
         res = await Runner.run(prospect_analyzer, prompt)

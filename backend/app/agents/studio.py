@@ -8,39 +8,38 @@ from app.agents.prompts import (
     MANAGER_AGENT_INSTRUCTIONS,
 )
 
-campaign_planner = Agent(
-    name="campaign_planner",
-    instructions=CAMPAIGN_PLANNER_INSTRUCTIONS,
-    model=velona,
-    output_type=CampaignPlan,
-    tools=[searxng_search, duckduckgo_search, tavily_search, crawl4ai_scrape, firecrawl_scrape],
-)
-
-content_generator = Agent(
-    name="content_generator",
-    instructions=CONTENT_GENERATOR_INSTRUCTIONS,
-    model=velona,
-    output_type=CampaignAssets,
-)
-
-manager_tools = [
-    campaign_planner.as_tool(
-        tool_name="campaign_planner",
-        tool_description="Plan a full campaign strategy from gathered context",
-    ),
-    content_generator.as_tool(
-        tool_name="content_generator",
-        tool_description="Generate specific marketing assets and copy",
-    ),
-]
-
-manager_agent = Agent(
-    name="manager_agent",
-    instructions=MANAGER_AGENT_INSTRUCTIONS,
-    model=velona,
-    tools=manager_tools,
-    output_type=ManagerResponse,
-)
+def _build_manager(model=None):
+    m = model or velona
+    campaign_planner = Agent(
+        name="campaign_planner",
+        instructions=CAMPAIGN_PLANNER_INSTRUCTIONS,
+        model=m,
+        output_type=CampaignPlan,
+        tools=[searxng_search, duckduckgo_search, tavily_search, crawl4ai_scrape, firecrawl_scrape],
+    )
+    content_generator = Agent(
+        name="content_generator",
+        instructions=CONTENT_GENERATOR_INSTRUCTIONS,
+        model=m,
+        output_type=CampaignAssets,
+    )
+    manager_tools = [
+        campaign_planner.as_tool(
+            tool_name="campaign_planner",
+            tool_description="Plan a full campaign strategy from gathered context",
+        ),
+        content_generator.as_tool(
+            tool_name="content_generator",
+            tool_description="Generate specific marketing assets and copy",
+        ),
+    ]
+    return Agent(
+        name="manager_agent",
+        instructions=MANAGER_AGENT_INSTRUCTIONS,
+        model=m,
+        tools=manager_tools,
+        output_type=ManagerResponse,
+    )
 
 
 def _flatten_history(history: list[dict]) -> str:
@@ -56,7 +55,9 @@ async def run_studio_chat(
     user_query: str,
     history: list[dict] = None,
     company_profile: dict = None,
+    model=None,
 ) -> ManagerResponse:
+    manager_agent = _build_manager(model)
     query_to_send = user_query
     if company_profile:
         profile_str = (

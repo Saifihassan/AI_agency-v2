@@ -4,18 +4,20 @@ from app.client import velona
 from app.tools import searxng_search, duckduckgo_search, tavily_search, crawl4ai_scrape, firecrawl_scrape
 from app.agents.prompts import COMPETITOR_ANALYZER_INSTRUCTIONS
 
-competitor_analyzer = Agent(
-    name="competitor_analyzer",
-    instructions=COMPETITOR_ANALYZER_INSTRUCTIONS,
-    model=velona,
-    output_type=CompetitiveAnalysis,
-    tools=[searxng_search, duckduckgo_search, tavily_search, crawl4ai_scrape, firecrawl_scrape],
-)
+def _build_agent(model=None):
+    return Agent(
+        name="competitor_analyzer",
+        instructions=COMPETITOR_ANALYZER_INSTRUCTIONS,
+        model=model or velona,
+        output_type=CompetitiveAnalysis,
+        tools=[searxng_search, duckduckgo_search, tavily_search, crawl4ai_scrape, firecrawl_scrape],
+    )
 
 
 async def run_competitor_agent(
-    target_website: str, company_profile: dict = None
+    target_website: str, company_profile: dict = None, model=None
 ) -> CompetitiveAnalysis:
+    competitor_analyzer = _build_agent(model)
     prompt = f"Target Website: {target_website}"
     if company_profile:
         prompt += (

@@ -43,6 +43,26 @@ function notifyUsageChanged() {
   }
 }
 
+export class ApiError extends Error {
+  status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
+
+async function errorFromResponse(res: Response): Promise<ApiError> {
+  let message = `Request failed (${res.status})`;
+  try {
+    const body = await res.json();
+    const detail = body?.detail ?? body?.message ?? body;
+    if (typeof detail === "string") message = detail;
+    else if (detail) message = JSON.stringify(detail);
+  } catch {}
+  return new ApiError(res.status, message);
+}
+
 async function handleLimited(res: Response): Promise<never | null> {
   if (res.status !== 429) return null;
   const body = await res.json().catch(() => null);
@@ -59,24 +79,25 @@ export async function runModule<K extends ModuleKind>(
   payload: Record<string, unknown>,
 ): Promise<ModuleResultMap[K]> {
   if (API_URL) {
+    let res: Response;
     try {
       const auth = await authHeader();
-      const res = await fetch(`${API_URL}/api/${kind}`, {
+      res = await fetch(`${API_URL}/api/${kind}`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...auth },
         body: JSON.stringify(payload),
       });
-      await handleLimited(res);
-      if (res.ok) {
-        const data = (await res.json()) as ModuleResultMap[K];
-        notifyUsageChanged();
-        return data;
-      }
-      console.warn(`[API] /api/${kind} returned status ${res.status}`);
     } catch (err) {
-      if (err instanceof UsageLimitError) throw err;
-      console.warn(`[API] /api/${kind} request failed:`, err);
+      console.warn(`[API] /api/${kind} network failure, using mock:`, err);
+      return (await mockRun(kind, payload, [])) as ModuleResultMap[K];
     }
+    await handleLimited(res);
+    if (res.ok) {
+      const data = (await res.json()) as ModuleResultMap[K];
+      notifyUsageChanged();
+      return data;
+    }
+    throw await errorFromResponse(res);
   }
   return (await mockRun(kind, payload, [])) as ModuleResultMap[K];
 }
@@ -86,24 +107,26 @@ export async function createWorkspace(
   existing: Workspace[],
 ): Promise<Workspace> {
   if (API_URL) {
+    let res: Response;
     try {
       const auth = await authHeader();
-      const res = await fetch(`${API_URL}/api/workspaces`, {
+      res = await fetch(`${API_URL}/api/workspaces`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...auth },
         body: JSON.stringify(payload),
       });
-      await handleLimited(res);
-      if (res.ok) {
-        const data = (await res.json()) as Workspace;
-        notifyUsageChanged();
-        return data;
-      }
-      console.warn(`[API] /api/workspaces returned status ${res.status}`);
     } catch (err) {
-      if (err instanceof UsageLimitError) throw err;
-      console.warn("[API] /api/workspaces request failed:", err);
+      console.warn("[API] /api/workspaces network failure, using mock:", err);
+      const profile = mockProfile(existing);
+      return { profile, ...(payload as object) } as unknown as Workspace;
     }
+    await handleLimited(res);
+    if (res.ok) {
+      const data = (await res.json()) as Workspace;
+      notifyUsageChanged();
+      return data;
+    }
+    throw await errorFromResponse(res);
   }
   const profile = mockProfile(existing);
   return {

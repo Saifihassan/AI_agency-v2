@@ -19,27 +19,29 @@ from app.agents.prompts import (
     NEWS_SEARCHER_INSTRUCTIONS,
 )
 
-news_researcher = Agent(
-    name="news_researcher",
-    instructions=NEWS_RESEARCHER_INSTRUCTIONS,
-    model=velona,
-    tools=[news_domain_search, searxng_search, duckduckgo_search, tavily_search],
-    output_type=NewsResearch,
-)
-
-news_searcher = Agent(
-    name="news_searcher",
-    instructions=NEWS_SEARCHER_INSTRUCTIONS,
-    model=velona,
-    tools=[news_domain_search],
-)
-
-market_analyst = Agent(
-    name="market_analyst",
-    instructions=MARKET_ANALYST_INSTRUCTIONS,
-    model=velona,
-    output_type=MarketIntelligenceReport,
-)
+def _build_agents(model=None):
+    m = model or velona
+    return (
+        Agent(
+            name="news_researcher",
+            instructions=NEWS_RESEARCHER_INSTRUCTIONS,
+            model=m,
+            tools=[news_domain_search, searxng_search, duckduckgo_search, tavily_search],
+            output_type=NewsResearch,
+        ),
+        Agent(
+            name="news_searcher",
+            instructions=NEWS_SEARCHER_INSTRUCTIONS,
+            model=m,
+            tools=[news_domain_search],
+        ),
+        Agent(
+            name="market_analyst",
+            instructions=MARKET_ANALYST_INSTRUCTIONS,
+            model=m,
+            output_type=MarketIntelligenceReport,
+        ),
+    )
 
 ALLOWED_DOMAINS = ALLOWED_NEWS_DOMAINS
 
@@ -111,7 +113,10 @@ def _parse_articles(raw) -> NewsResearch:
     return NewsResearch(articles=articles)
 
 
-async def run_market_news_agent(workspace_name: str = "General", industry: str = "technology"):
+async def run_market_news_agent(
+    workspace_name: str = "General", industry: str = "technology", model=None
+):
+    _news_researcher, news_searcher, market_analyst = _build_agents(model)
     with trace("market_news_workflow"):
         prompt = (
             f"Gather the latest news for the {industry} industry, focused on how it "

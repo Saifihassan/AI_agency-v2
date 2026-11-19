@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useWorkspaces } from "./workspace";
 import { useUsage } from "./usage";
+import { useProvider } from "./provider";
 import { apiMode } from "@/lib/api";
 import {
   Streamline,
@@ -65,6 +66,7 @@ export default function Sidebar() {
   const path = usePathname();
   const { active, workspaces, setActive } = useWorkspaces();
   const { ready, modules, windowHours } = useUsage();
+  const { configured: byok } = useProvider();
   const [open, setOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [origin, setOrigin] = useState({ x: 39, y: 39 });
@@ -167,7 +169,7 @@ export default function Sidebar() {
           >
             <Streamline icon={l.icon} />
             {l.label}
-            {l.module && ready && (
+            {l.module && ready && !byok && (
               <span
                 className={`usage-badge ${modules[l.module]?.remaining === 0 ? "usage-empty" : ""}`}
                 title={
